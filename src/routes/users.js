@@ -1,68 +1,87 @@
-import { uuid } from '../db/connect.js';
-import { hashCompare, hashPassword } from '../utils/bcrypt.js';
-import { z } from 'zod';
+import path from 'path'
+import fs from 'fs';
+import mime from 'mime-types'
+import { generateFilename, saveFile } from '../utils/file.js'
+import { db } from '../db/connect.js';
+import sharp from 'sharp';
+
 
 /**
  * @type {import('fastify').FastifyPluginCallback}
  * @param {FastifyWithDB} fastify
- */
+*/
 export default (fastify, opts, done) => {
-    const UserSchema = z.object({
-        username: z.string().min(3).max(64),
-        password: z.string().min(8, "Password must be at least 8 characters")
-            .max(64, "Password must not exceed 64 characters")
-            .regex(/[A-Z]/, "Must contain at least one uppercase letter")
-            .regex(/[a-z]/, "Must contain at least one lowercase letter")
-            .regex(/\d/, "Must contain at least one number")
-            .regex(/[!@#$%^&*(),.?":{}|<>]/, "Must contain at least one special character")
-            .regex(/^\S*$/, "Must not contain spaces"),
-        confirmPassword: z.string(),
-    }).refine((data) => data.password === data.confirmPassword, {
-        message: "Passwords don't match",
-        path: ["confirmPassword"],
-    })
-    fastify.get('/users', async (request, reply) => {
+    fastify.get('/', async (request, reply) => {
         const users = fastify.db.prepare(`SELECT * FROM users`).all()
         return users
     })
-    fastify.post('/register', async (request, reply) => {
+    fastify.get('/me', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+        return request.user
+    })
+    fastify.post('/me/avatar', { preValidation: [fastify.authenticate] }, async (request, reply) => {
         try {
-            UserSchema.parse(request.body)
-        } catch (err) {
-            return reply.code(400).send({ errors: err.errors })
+            const data = await request.file()
+            const allowedTypes = ["image/png", "image/jpeg"]
+            if (!allowedTypes.includes(data.mimetype)) return reply.code(400).send({ error: 'Invalid file type. Only JPEG/PNG allowed.' })
+            const extension = path.extname(data.filename)
+            const filename = generateFilename(extension)
+            const dirPath = path.join('uploads', 'avatars', generateFilename())
+            const filePath = path.join(dirPath, filename)
+            fs.mkdirSync(path.dirname(filePath), { recursive: true })
+            await saveFile(data.file, filePath)
+            const result = db.transaction((id, newPath, newName) => {
+                const old = db.prepare(`SELECT avatar_path FROM users WHERE id = ?`).get(id)
+                db.prepare(`UPDATE users SET avatar_path = ?, avatar_name = ? WHERE id = ?`).run(newPath, newName, id)
+                return old
+            })(request.user.id, dirPath, data.filename)
+            if (result?.avatar_path) {
+                fs.rmSync(result.avatar_path, { recursive: true, force: true })
+            }
+            const sizes = [
+                { name: 'small', width: 64, height: 64 },
+                { name: 'medium', width: 128, height: 128 },
+                { name: 'large', width: 512, height: 512 },
+            ]
+            await Promise.all(sizes.map((size) => {
+                const ext = path.extname(data.filename)
+                const outputFile = path.join(dirPath, `${size.name}${ext}`)
+                return sharp(filePath)
+                    .resize(size.with, size.height)
+                    .toFile(outputFile)
+            }))
+            fs.unlinkSync(filePath)
+            reply.code(201).send()
+            return
         }
-        let { username, password } = request.body;
-        password = hashPassword(password)
-        const id = uuid();
-        const stmt = fastify.db.prepare(`INSERT INTO users (id, username, password) VALUES (?, ?, ?)`);
-        // stmt.run(id, username, password);
-
-        reply.code(201)
-    });
-    fastify.post('/login', async (request, reply) => {
+        catch (e) {
+            reply.code(400)
+            console.log(e)
+            return
+        }
+    })
+    fastify.get('/me/avatar', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+        const size = request.query.size || 'large'
+        const allowedSizes = ['small', 'medium', 'large'];
+        if (!allowedSizes.includes(size)) {
+            reply.code(400)
+            return
+        }
         try {
-            UserSchema.parse(request.body)
-        } catch (err) {
-            return reply.code(400).send({ errors: err.errors })
+            const result = db.prepare(`SELECT avatar_path, avatar_name FROM users WHERE id = ?`).get(request.user.id)
+            if (!result?.avatar_path) return reply.code(404).send({ error: 'Avatar not found.' })
+            const ext = path.extname(result.avatar_name)
+            const filePath = path.join(result.avatar_path, `${size}${ext}`)
+            if (!fs.existsSync(filePath)) return reply.code(404).send({ error: 'Not Found.' })
+            const fileStream = fs.createReadStream(filePath)
+            return reply.header('Content-Disposition', `inline; filename="${result.avatar_name}"`)
+                .type(mime.contentType(filePath))
+                .send(fileStream)
         }
-        let { username, password } = request.body;
-        const id = uuid();
-        const user = fastify.db.prepare(`SELECT * FROM users WHERE username = ?`).get(username);
-        if (!user) return reply.code(401).send({ error: 'Username or Password incorrect' })
-        if (!hashCompare(password, user.password)) return reply.code(401).send({ error: 'Username or Password incorrect' })
-        const accessToken = fastify.jwt.sign({ userId: user.id }, { expiresIn: '1h' })
-        const refreshToken = fastify.jwt.sign({ userId: user.id }, { expiresIn: '7d' })
-        reply.setCookie('token', accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            path: '/',
-            sameSite: 'strict'
-        })
-        reply.code(200).send({ accessToken, refreshToken })
-    });
-
-    fastify.get('/profile', { preValidation: [fastify.authenticate] }, (request, reply) => {
-        reply.code(200).send({})
+        catch (e) {
+            reply.code(500)
+            console.log(e)
+            return
+        }
     })
     done()
 }

@@ -10,8 +10,16 @@ db.prepare(`
     id TEXT PRIMARY KEY DEFAULT (hex(randomblob(16))),
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-  )
+    avatar_path TEXT,
+    avatar_name TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    bio TEXT,
+    CHECK(username != '')
+    );
+`).run();
+
+db.prepare(`
+  CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 `).run();
 
 export { db, uuid };

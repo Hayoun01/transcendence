@@ -12,9 +12,12 @@
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/jwt": "^9.1.0",
+    "@fastify/multipart": "^9.0.3",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.1.1",
     "fastify": "^5.4.0",
+    "mime-types": "^3.0.1",
+    "sharp": "^0.34.2",
     "uuid": "^11.1.0",
     "zod": "^3.25.67"
   },

@@ -3,10 +3,13 @@ import indexRoute from './routes/index.js'
 import { db } from './db/connect.js'
 import fastifyJwt from '@fastify/jwt'
 import fastifyCookie from '@fastify/cookie'
+import fastifyMultipart from '@fastify/multipart'
 
 const fastify = Fastify({
     logger: true
 })
+
+fastify.register(fastifyMultipart)
 
 fastify.register(fastifyJwt, {
     secret: 'enR8JDK3EJvBl03pk9wbP33EO8J6cbB5irrjkML996X9rsPe3V',
@@ -26,6 +29,7 @@ fastify.decorate('authenticate', async (request, reply) => {
         const payload = await request.jwtVerify()
         const user = fastify.db.prepare(`SELECT * FROM users WHERE id = ?`).get(payload.userId)
         if (!user) return reply.code(401).send({ error: 'Unauthorized' })
+        request.user = user
     } catch (e) {
         reply.code(401).send({ error: 'Unauthorized' })
     }
