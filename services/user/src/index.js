@@ -6,7 +6,7 @@ import fastifyCookie from '@fastify/cookie'
 import fastifyMultipart from '@fastify/multipart'
 
 const fastify = Fastify({
-    logger: true
+    logger: true,
 })
 
 fastify.register(fastifyMultipart)
@@ -20,9 +20,6 @@ fastify.register(fastifyJwt, {
 })
 
 fastify.decorate('db', db)
-fastify.get('/', async function handler(request, reply) {
-    return { hello: 'world' }
-})
 
 fastify.decorate('authenticate', async (request, reply) => {
     try {
@@ -36,7 +33,6 @@ fastify.decorate('authenticate', async (request, reply) => {
 })
 
 fastify.register(fastifyCookie)
-
 
 fastify.register(indexRoute, { prefix: '/api/v1' })
 

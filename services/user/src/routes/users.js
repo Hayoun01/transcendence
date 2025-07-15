@@ -2,8 +2,8 @@ import path from 'path'
 import fs from 'fs';
 import mime from 'mime-types'
 import { generateFilename, saveFile } from '../utils/file.js'
-import { db } from '../db/connect.js';
 import sharp from 'sharp';
+import { z } from 'zod';
 
 
 /**
@@ -16,7 +16,11 @@ export default (fastify, opts, done) => {
         return users
     })
     fastify.get('/me', { preValidation: [fastify.authenticate] }, async (request, reply) => {
-        return request.user
+        const user = request.user
+        return {
+            username: user.username,
+            bio: user.bio
+        }
     })
     fastify.post('/me/avatar', { preValidation: [fastify.authenticate] }, async (request, reply) => {
         try {
@@ -29,9 +33,9 @@ export default (fastify, opts, done) => {
             const filePath = path.join(dirPath, filename)
             fs.mkdirSync(path.dirname(filePath), { recursive: true })
             await saveFile(data.file, filePath)
-            const result = db.transaction((id, newPath, newName) => {
-                const old = db.prepare(`SELECT avatar_path FROM users WHERE id = ?`).get(id)
-                db.prepare(`UPDATE users SET avatar_path = ?, avatar_name = ? WHERE id = ?`).run(newPath, newName, id)
+            const result = fastify.db.transaction((id, newPath, newName) => {
+                const old = fastify.db.prepare(`SELECT avatar_path FROM users WHERE id = ?`).get(id)
+                fastify.db.prepare(`UPDATE users SET avatar_path = ?, avatar_name = ? WHERE id = ?`).run(newPath, newName, id)
                 return old
             })(request.user.id, dirPath, data.filename)
             if (result?.avatar_path) {
@@ -67,11 +71,11 @@ export default (fastify, opts, done) => {
             return
         }
         try {
-            const result = db.prepare(`SELECT avatar_path, avatar_name FROM users WHERE id = ?`).get(request.user.id)
-            if (!result?.avatar_path) return reply.code(404).send({ error: 'Avatar not found.' })
+            const result = fastify.db.prepare(`SELECT avatar_path, avatar_name FROM users WHERE id = ?`).get(request.user.id)
+            if (!result.avatar_path) return reply.code(404).send({ error: 'Avatar not found.' })
             const ext = path.extname(result.avatar_name)
             const filePath = path.join(result.avatar_path, `${size}${ext}`)
-            if (!fs.existsSync(filePath)) return reply.code(404).send({ error: 'Not Found.' })
+            if (!fs.existsSync(filePath)) return reply.code(404).send({ error: 'Avatar not found.' })
             const fileStream = fs.createReadStream(filePath)
             return reply.header('Content-Disposition', `inline; filename="${result.avatar_name}"`)
                 .type(mime.contentType(filePath))
@@ -82,6 +86,42 @@ export default (fastify, opts, done) => {
             console.log(e)
             return
         }
+    })
+    const updateUserSchema = z.object({
+        bio: z.string().max(256).optional(),
+    }).strict()
+    fastify.put('/me', {
+        preValidation: [fastify.authenticate],
+        schema: {
+            response: {
+                500: {
+                    type: 'object',
+                    properties: {
+                        statusCode: { type: 'number' },
+                        error: { type: 'string' }
+                    }
+                }
+            }
+        }
+    }, async (request, reply) => {
+        try {
+            updateUserSchema.parse(request.body)
+        } catch (err) {
+            const errors = err.errors.map((err) => ({
+                path: err.path.join('.') || err.keys.join('.'),
+                message: err.message
+            }))
+            return reply.code(400).send({ errors: errors })
+        }
+        if (!request.body || Object.keys(request.body).length == 0) return reply.code(400).send({ error: "Bad Request" })
+        const data = request.body
+        const fieldToUpdate = Object.keys(data)
+            .filter((key) => data[key] !== undefined)
+            .map((key) => `${key} = ?`)
+            .join(', ')
+        const valueToupdate = Object.values(data).filter((value) => value !== undefined)
+        fastify.db.prepare(`UPDATE users SET ${fieldToUpdate} WHERE id = ?`).run([...valueToupdate, request.user.id])
+        return
     })
     done()
 }

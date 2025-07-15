@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPEND
+}
+
+model User {
+  id             String     @id @default(uuid())
+  email          String     @unique
+  passwordHashed String?    @map("password_hashed")
+  isVerified     Boolean    @default(false) @map("is_verified")
+  status         UserStatus @default(ACTIVE)
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  deletedAt      DateTime?  @map("deleted_at")
+
+  OAuthLink     OAuthLink[]
+  TwoFactorAuth TwoFactorAuth[]
+  Session       Session[]
+
+  @@map("users")
+}
+
+model OAuthLink {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  provider     String
+  providerId   String    @map("provider_id")
+  accessToken  String    @map("access_token")
+  refreshToken String?   @map("refresh_token")
+  expiresAt    DateTime? @map("expires_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(references: [id], fields: [userId])
+
+  @@unique([provider, providerId])
+  @@map("oauth_links")
+}
+
+enum TwoFactorAuthMethod {
+  TOTP
+  EMAIL
+}
+
+model TwoFactorAuth {
+  id          String              @id @default(uuid())
+  userId      String              @map("user_id")
+  method      TwoFactorAuthMethod @default(TOTP)
+  secret      String?
+  iv          Bytes?
+  tag         Bytes?
+  backupCodes Json?               @map("backup_codes")
+  isEnabled   Boolean             @default(false) @map("is_enabled")
+  isVerified  Boolean             @default(false) @map("is_verified")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  user User @relation(references: [id], fields: [userId])
+
+  @@map("two_factor_auth")
+}
+
+model Session {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  token        String    @unique
+  refreshToken String    @unique @map("refresh_token")
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now()) @map("created_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  user User @relation(references: [id], fields: [userId])
+
+  @@index([userId])
+  @@map("sessions")
+}

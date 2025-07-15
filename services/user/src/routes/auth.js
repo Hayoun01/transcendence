@@ -17,7 +17,7 @@ export default (fastify, opts, done) => {
             .regex(/[!@#$%^&*(),.?":{}|<>]/, "Must contain at least one special character")
             .regex(/^\S*$/, "Must not contain spaces"),
         confirmPassword: z.string(),
-    }).refine((data) => data.password === data.confirmPassword, {
+    }).strict().refine((data) => data.password === data.confirmPassword, {
         message: "Passwords don't match",
         path: ["confirmPassword"],
     })
@@ -30,12 +30,16 @@ export default (fastify, opts, done) => {
             .regex(/\d/, "Must contain at least one number")
             .regex(/[!@#$%^&*(),.?":{}|<>]/, "Must contain at least one special character")
             .regex(/^\S*$/, "Must not contain spaces"),
-    })
+    }).strict()
     fastify.post('/register', async (request, reply) => {
         try {
             registerUserSchema.parse(request.body)
         } catch (err) {
-            return reply.code(400).send({ errors: err.errors })
+            const errors = err.errors.map((err) => ({
+                path: err.path.join('.') || err.keys.join('.'),
+                message: err.message
+            }))
+            return reply.code(400).send({ errors: errors })
         }
         let { username, password } = request.body;
         password = hashPassword(password)
@@ -49,7 +53,11 @@ export default (fastify, opts, done) => {
         try {
             loginUserSchema.parse(request.body)
         } catch (err) {
-            return reply.code(400).send({ errors: err.errors })
+            const errors = err.errors.map((err) => ({
+                path: err.path.join('.') || err.keys.join('.'),
+                message: err.message
+            }))
+            return reply.code(400).send({ errors: errors })
         }
         let { username, password } = request.body;
         const id = uuid();
@@ -58,12 +66,6 @@ export default (fastify, opts, done) => {
         if (!hashCompare(password, user.password)) return reply.code(401).send({ error: 'Username or Password incorrect' })
         const accessToken = fastify.jwt.sign({ userId: user.id }, { expiresIn: '1h' })
         const refreshToken = fastify.jwt.sign({ userId: user.id }, { expiresIn: '7d' })
-        reply.setCookie('token', accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            path: '/',
-            sameSite: 'strict'
-        })
         reply.code(200).send({ accessToken, refreshToken })
     });
 

@@ -1,0 +1,31 @@
+{
+  "name": "transcendence",
+  "version": "1.0.0",
+  "description": "ping pong game",
+  "main": "./src/index.js",
+  "scripts": {
+    "start:dev": "nodemon ./src/index.js",
+    "start": "node ./src/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/jwt": "^9.1.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "@prisma/client": "^6.11.1",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.0",
+    "fastify": "^5.4.0",
+    "ioredis": "^5.6.1",
+    "qrcode": "^1.5.4",
+    "speakeasy": "^2.0.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.67"
+  },
+  "type": "module",
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "prisma": "^6.11.1"
+  }
+}
