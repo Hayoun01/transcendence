@@ -6,6 +6,15 @@ const sendError = (reply, statusCode, message, extra = {}) => {
     })
 }
 
+const sendSuccess = (reply, statusCode, message, extra = {}) => {
+    return reply.code(statusCode).send({
+        success: true,
+        message,
+        ...extra
+    })
+}
+
 export {
-    sendError
+    sendError,
+    sendSuccess
 }

@@ -1,4 +1,5 @@
 import { prisma } from "../db/prisma.js"
+import { randomUUID } from 'crypto'
 
 
 const isUserExists = async (email) => {
@@ -11,8 +12,10 @@ const isUserExists = async (email) => {
 }
 
 const newUserSession = async (fastify, request, userId) => {
-    const accessToken = fastify.jwt.sign({ userId }, { expiresIn: '1h' })
-    const refreshToken = fastify.jwt.sign({ userId }, { expiresIn: '7d' })
+    const accessToken = fastify.jwt.sign({ userId }, { expiresIn: '24h' })
+    const refreshToken = randomUUID()
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 7)
     await prisma.session.create({
         data: {
             userId,
@@ -20,7 +23,7 @@ const newUserSession = async (fastify, request, userId) => {
             refreshToken,
             ipAddress: request.ip,
             userAgent: request.headers['user-agent'],
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            expiresAt
         }
     })
     return { accessToken, refreshToken }

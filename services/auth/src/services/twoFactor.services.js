@@ -4,9 +4,9 @@ import crypto from 'crypto'
 import { environ } from '../utils/env.js';
 import { prisma } from '../db/prisma.js';
 
-const setup2FA = async (user) => {
+const setup2FA = async (id) => {
     const secret = speakeasy.generateSecret({
-        name: `Transcendence:${user.email}`
+        name: `Transcendence:${id}`
     });
 
     const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
@@ -112,7 +112,7 @@ const fetchUser2FA = async (userId, method) => {
 }
 
 const generateBackupCodes = () => {
-    return Array.from({ length: 10 }, () =>
+    return Array.from({ length: 20 }, () =>
         Math.random().toString(36).substring(2, 10).toUpperCase()
     );
 }

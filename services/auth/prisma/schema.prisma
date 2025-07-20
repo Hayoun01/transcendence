@@ -30,16 +30,22 @@ model User {
   @@map("users")
 }
 
+enum OAuthProvider {
+  GOOGLE
+  GITHUB
+  FOURTY_TWO
+}
+
 model OAuthLink {
-  id           String    @id @default(uuid())
-  userId       String    @map("user_id")
-  provider     String
-  providerId   String    @map("provider_id")
-  accessToken  String    @map("access_token")
-  refreshToken String?   @map("refresh_token")
-  expiresAt    DateTime? @map("expires_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id           String        @id @default(uuid())
+  userId       String        @map("user_id")
+  provider     OAuthProvider
+  providerId   String        @map("provider_id")
+  accessToken  String        @map("access_token")
+  refreshToken String?       @map("refresh_token")
+  expiresAt    DateTime?     @map("expires_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
 
   user User @relation(references: [id], fields: [userId])
 
@@ -75,14 +81,15 @@ model Session {
   userId       String    @map("user_id")
   token        String    @unique
   refreshToken String    @unique @map("refresh_token")
-  ipAddress    String?
-  userAgent    String?
-  expiresAt    DateTime
+  ipAddress    String?   @map("ip_address")
+  userAgent    String?   @map("user_agent")
+  expiresAt    DateTime  @map("expires_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   deletedAt    DateTime? @map("deleted_at")
 
   user User @relation(references: [id], fields: [userId])
 
   @@index([userId])
+  @@index([refreshToken])
   @@map("sessions")
 }

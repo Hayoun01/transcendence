@@ -3,13 +3,15 @@ import QRCode from 'qrcode';
 import { _2FAService } from '../services/twoFactor.services.js';
 import { prisma } from '../db/prisma.js';
 import { setup2FASchema } from '../schemas/twoFactor.schemas.js';
-import { sendError } from '../utils/fastify.js';
+import { sendError, sendSuccess } from '../utils/fastify.js';
+import { authService } from '../services/auth.services.js';
 
 /**
  * @type {import('fastify').FastifyPluginCallback}
  */
 export default (fastify, opts, done) => {
-    fastify.post('/setup', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    fastify.post('/setup', async (request, reply) => {
+        const userId = request.headers['x-user-id']
         const result = setup2FASchema.safeParse(request.body)
         if (!result.success) {
             const errors = result.error.errors.map((err) => ({
@@ -19,15 +21,17 @@ export default (fastify, opts, done) => {
             return sendError(reply, 400, 'Bad request', { errors: errors })
         }
         const { method } = request.body
-        if (await _2FAService.userHas2FA(request.user.id, method))
+        if (await _2FAService.userHas2FA(userId, method))
             return sendError(reply, 400, `You've already setup ${method}`)
-        const twoFa = await _2FAService.setup2FA({ email: "Hayyoun@gmail.com" })
-        await _2FAService.store2FA(request.user.id, twoFa)
-        return twoFa
+        const twoFa = await _2FAService.setup2FA(userId)
+        await _2FAService.store2FA(userId, twoFa)
+        return sendSuccess(reply, 201, ``, { ...twoFa })
     })
-    fastify.post('/verify', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    // TODO: validate body
+    fastify.post('/verify', async (request, reply) => {
+        const userId = request.headers['x-user-id']
         const { code, method } = request.body
-        const user2FA = await _2FAService.fetchUser2FA(request.user.id, method);
+        const user2FA = await _2FAService.fetchUser2FA(userId, method);
         if (!user2FA)
             return sendError(reply, 400, `You must setup ${method} first`)
         else if (user2FA.isVerified) {
@@ -43,7 +47,7 @@ export default (fastify, opts, done) => {
                 data: {
                     isEnabled: true,
                     isVerified: true,
-                    backupCodes: backupCodes.reduce((map, code) => { map[code] = { used: false }; return map }, {})
+                    backupCodes: backupCodes.reduce((map, code) => { map[code] = false; return map }, {})
                 }
             })
             reply.code(200).send({
@@ -54,6 +58,7 @@ export default (fastify, opts, done) => {
 
         return sendError(reply, 400, `Invalid ${method} code!`)
     })
+    // TODO: validate body
     fastify.post('/challenge', async (request, reply) => {
         const { code, sessionToken, method } = request.body
         let payload;
@@ -71,18 +76,7 @@ export default (fastify, opts, done) => {
 
         const secret = _2FAService.decrypt2FASecret(user2FA.secret, user2FA.iv, user2FA.tag)
         if (await _2FAService.verify2FAToken(secret, code)) {
-            const accessToken = fastify.jwt.sign({ userId: payload.userId }, { expiresIn: '1h' })
-            const refreshToken = fastify.jwt.sign({ userId: payload.userId }, { expiresIn: '7d' })
-            await prisma.session.create({
-                data: {
-                    userId: payload.userId,
-                    token: accessToken,
-                    refreshToken,
-                    ipAddress: request.ip,
-                    userAgent: request.headers['user-agent'],
-                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-                }
-            })
+            const { accessToken, refreshToken } = await authService.newUserSession(fastify, request, payload.userId)
             return { accessToken, refreshToken }
         }
         return sendError(reply, 401, 'Invalid 2FA code!')

@@ -1,5 +1,7 @@
 import { authControllers } from '../controllers/auth.controllers.js';
 import { prisma } from '../db/prisma.js';
+import { authService } from '../services/auth.services.js';
+import { sendError, sendSuccess } from '../utils/fastify.js';
 
 /**
  * @type {import('fastify').FastifyPluginCallback}
@@ -14,18 +16,13 @@ export default (fastify, opts, done) => {
         // })],
     }, authControllers.loginUser(fastify));
 
-    fastify.get('/sessions', async (request, reply) => {
-        const sessions = await prisma.session.findMany()
-        reply.send(sessions)
-    })
+    fastify.post('/refresh', authControllers.refreshToken)
 
-    fastify.delete('/sessions', async (request, reply) => {
-        await prisma.session.deleteMany()
-        reply.code(200)
-    })
+    fastify.get('/sessions', authControllers.getAllUserSessions)
 
-    fastify.get('/verify', { preValidation: [fastify.authenticate] }, (request, reply) => {
-        reply.code(200).send()
-    })
+    fastify.delete('/sessions/:session_id', authControllers.deleteSessionById)
+
+    fastify.get('/verify', authControllers.verifyToken)
+
     done()
 }
