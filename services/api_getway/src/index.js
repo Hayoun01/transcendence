@@ -18,6 +18,7 @@ const publicRoutes = [
 
 fastify.addHook('onRequest', async (request, reply) => {
     const uuid = randomUUID()
+    // TODO: trace request
     request.headers['x-request-id'] = uuid
     reply.header('x-request-id', uuid)
     const isInternal = request.url.includes('/internal/')

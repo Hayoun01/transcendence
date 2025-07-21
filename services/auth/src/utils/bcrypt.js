@@ -1,10 +1,9 @@
-import bcrypt from 'bcrypt';
+import bcrypt from '@node-rs/bcrypt';
 
 const saltRound = 10;
 
 export const hashPassword = (password) => {
-    const salt = bcrypt.genSaltSync(saltRound)
-    return bcrypt.hashSync(password, salt)
+    return bcrypt.hashSync(password, saltRound)
 }
 
 export const hashCompare = (password, hash) => {

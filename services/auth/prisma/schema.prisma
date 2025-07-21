@@ -23,9 +23,10 @@ model User {
   updatedAt      DateTime   @updatedAt @map("updated_at")
   deletedAt      DateTime?  @map("deleted_at")
 
-  OAuthLink     OAuthLink[]
-  TwoFactorAuth TwoFactorAuth[]
-  Session       Session[]
+  OAuthLink         OAuthLink[]
+  TwoFactorAuth     TwoFactorAuth[]
+  Session           Session[]
+  VerificationToken VerificationToken[]
 
   @@map("users")
 }
@@ -37,15 +38,12 @@ enum OAuthProvider {
 }
 
 model OAuthLink {
-  id           String        @id @default(uuid())
-  userId       String        @map("user_id")
-  provider     OAuthProvider
-  providerId   String        @map("provider_id")
-  accessToken  String        @map("access_token")
-  refreshToken String?       @map("refresh_token")
-  expiresAt    DateTime?     @map("expires_at")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  id         String        @id @default(uuid())
+  userId     String        @map("user_id")
+  provider   OAuthProvider
+  providerId String        @map("provider_id")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
 
   user User @relation(references: [id], fields: [userId])
 
@@ -74,6 +72,27 @@ model TwoFactorAuth {
   user User @relation(references: [id], fields: [userId])
 
   @@map("two_factor_auth")
+}
+
+enum VerificationTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+model VerificationToken {
+  id        String                @id @default(uuid())
+  userId    String                @map("user_id")
+  token     String
+  type      VerificationTokenType
+  attempts  Int                   @default(0)
+  expiresAt DateTime              @map("expires_at")
+  createdAt DateTime              @default(now()) @map("created_at")
+  deletedAt DateTime?             @map("deleted_at")
+
+  user User @relation(references: [id], fields: [userId])
+
+  @@index([userId, type, deletedAt])
+  @@map("verification_token")
 }
 
 model Session {

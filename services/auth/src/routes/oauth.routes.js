@@ -1,18 +1,21 @@
 import axios from 'axios';
 import { sendError, sendSuccess } from '../utils/fastify.js';
+import { authService } from '../services/auth.services.js';
+import { prisma } from '../db/prisma.js';
+import { environ } from '../utils/env.js';
 
 const providers = {
     google: {
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        clientId: environ.GOOGLE_CLIENT_ID,
+        clientSecret: environ.GOOGLE_CLIENT_SECRET,
         authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
         tokenUrl: 'https://oauth2.googleapis.com/token',
         profileUrl: 'https://www.googleapis.com/oauth2/v3/userinfo',
         scopes: ['openid', 'email', 'profile']
     },
     github: {
-        clientId: process.env.GITHUB_CLIENT_ID,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET,
+        clientId: environ.GITHUB_CLIENT_ID,
+        clientSecret: environ.GITHUB_CLIENT_SECRET,
         authUrl: 'https://github.com/login/oauth/authorize',
         tokenUrl: 'https://github.com/login/oauth/access_token',
         profileUrl: 'https://api.github.com/user',
@@ -33,9 +36,7 @@ export default (fastify, opts, done) => {
             })
         return sendError(reply, 400, 'Unsupported OAuth provider')
     })
-    fastify.get('/:provider/callback', async (request, reply) => {
-        const { provider } = request.params
-        const { code } = request.query
+    const getOAuthProfile = async (provider, code) => {
         const config = providers[provider]
         if (provider === 'github') {
             const { data: accessTokenData } = await axios.post(
@@ -64,9 +65,34 @@ export default (fastify, opts, done) => {
                 id: profile.id.toString(),
                 email: primaryEmail,
                 name: profile.name || profile.login
-            };
+            }
         }
-        return sendError(reply, 400, 'Unsupported OAuth provider')
+        return null
+    }
+    fastify.get('/:provider/callback', async (request, reply) => {
+        const { provider } = request.params
+        const { code } = request.query
+        const config = providers[provider]
+        const oAuthProfile = await getOAuthProfile(provider, code)
+        if (!oAuthProfile)
+            return sendError(reply, 400, 'Unsupported OAuth provider')
+        if (await authService.isUserExists(oAuthProfile.email))
+            return sendError(reply, 400, 'User already exists!')
+        await prisma.$transaction(async (tx) => {
+            const created_user = await tx.user.create({
+                data: {
+                    email: oAuthProfile.email
+                }
+            })
+            await tx.oAuthLink.create({
+                data: {
+                    provider: provider.toUpperCase(),
+                    providerId: oAuthProfile.id,
+                    userId: created_user.id,
+                }
+            })
+        })
+        return sendSuccess(reply, 201, 'User successfuly created!')
     })
     done()
 }

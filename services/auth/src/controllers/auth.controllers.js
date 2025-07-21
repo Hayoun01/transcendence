@@ -6,6 +6,9 @@ import { prisma } from '../db/prisma.js';
 import { authService } from '../services/auth.services.js';
 import { sendError } from '../utils/fastify.js';
 import { postInternal } from '../utils/internalClient.js';
+import otpServices from '../services/otp.services.js';
+import mailer from '../utils/mailer.js';
+import { queue } from '../services/queue.services.js';
 
 /**
  * 
@@ -21,29 +24,34 @@ const registerUser = async (request, reply) => {
         return sendError(reply, 400, 'Bad request', { errors: errors })
     }
     let { email, password, username } = request.body;
-    if (await authService.isUserExists(email))
-        return sendError(reply, 400, 'User already exists!')
-    const checkRes = await postInternal('http://localhost:3002/api/v1/internal/username-available', {
-        username
+    const [userExists, usernameAvailable] = await Promise.all([
+        authService.isUserExists(email),
+        postInternal('http://localhost:3002/api/v1/internal/username-available', { username }),
+    ]);
+
+    if (userExists) {
+        return sendError(reply, 409, 'User already exists!');
+    }
+
+    if (!usernameAvailable.ok) {
+        return sendError(reply, 409, 'Username already taken!');
+    }
+
+    const createdUser = await prisma.user.create({
+        data: {
+            email,
+            passwordHashed: hashPassword(password)
+        }
     })
-    if (!checkRes.ok)
-        return sendError(reply, 400, 'Username already taken!')
-    const createdUser = await prisma.$transaction(async (tx) => {
-        const createUser = await tx.user.create({
-            data: {
-                email,
-                passwordHashed: hashPassword(password)
-            }
-        })
-        const res = await postInternal('http://localhost:3002/api/v1/internal/profiles', {
-            userId: createUser.id,
-            username
-        })
-        if (!res.ok)
-            throw new Error('Internal server error')
-        return createUser
+
+    await queue.registration.add('process-registration', {
+        userId: createdUser.id,
+        username,
+        email,
+    }, {
+        priority: 1,
     })
-    reply.code(201).send(createdUser)
+    reply.code(201).send()
 }
 
 /**

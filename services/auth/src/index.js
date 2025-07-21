@@ -6,6 +6,8 @@ import { environ } from './utils/env.js'
 import { prisma } from './db/prisma.js'
 import fastifyRateLimit from '@fastify/rate-limit'
 import Redis from 'ioredis'
+import { redis } from './db/redis.js'
+import { queue } from './services/queue.services.js'
 
 const fastify = Fastify({
     logger: true,
@@ -23,11 +25,14 @@ await fastify.register(fastifyRateLimit, {
     global: false,
     max: 3,
     timeWindow: '1 minute',
-    redis: new Redis({ host: '127.0.0.1' }),
+    redis,
 })
 
 await fastify.register(fastifyCookie)
 await fastify.register(indexRoute, { prefix: '/api/v1' })
+fastify.addHook('onClose', async () => {
+    await queue.registration.close()
+})
 
 try {
     await fastify.listen({ port: environ.PORT })
