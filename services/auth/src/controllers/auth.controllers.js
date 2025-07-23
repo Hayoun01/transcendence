@@ -4,17 +4,18 @@ import { v4 as uuid } from 'uuid';
 import { hashCompare, hashPassword } from '../utils/bcrypt.js';
 import { prisma } from '../db/prisma.js';
 import { authService } from '../services/auth.services.js';
-import { sendError } from '../utils/fastify.js';
+import { requestToHeaders, sendError, sendSuccess } from '../utils/fastify.js';
 import { postInternal } from '../utils/internalClient.js';
 import otpServices from '../services/otp.services.js';
 import mailer from '../utils/mailer.js';
-import { queue } from '../services/queue.services.js';
+import { getQueue, QueueType } from '../services/queue.services.js';
 
 /**
  * 
- * @type {import('fastify').RouteHandlerMethod}
+ * @param {import('fastify').FastifyInstance} fastify
+ * @return {import('fastify').RouteHandlerMethod}
  */
-const registerUser = async (request, reply) => {
+const registerUser = (fastify) => async (request, reply) => {
     const result = registerUserSchema.safeParse(request.body)
     if (!result.success) {
         const errors = result.error.errors.flatMap((err) => ({
@@ -26,7 +27,7 @@ const registerUser = async (request, reply) => {
     let { email, password, username } = request.body;
     const [userExists, usernameAvailable] = await Promise.all([
         authService.isUserExists(email),
-        postInternal('http://localhost:3002/api/v1/internal/username-available', { username }),
+        postInternal('http://localhost:3002/api/v1/internal/username-available', { username }, requestToHeaders(request)),
     ]);
 
     if (userExists) {
@@ -37,61 +38,75 @@ const registerUser = async (request, reply) => {
         return sendError(reply, 409, 'Username already taken!');
     }
 
-    const createdUser = await prisma.user.create({
-        data: {
-            email,
-            passwordHashed: hashPassword(password)
-        }
+    await prisma.$transaction(async (tx) => {
+        const createdUser = await tx.user.create({
+            data: {
+                email,
+                passwordHashed: hashPassword(password)
+            },
+            select: {
+                id: true
+            }
+        })
+        const sessionToken = fastify.jwt.sign({
+            userId: createdUser.id,
+            type: "email_verification"
+        }, { expiresIn: '4m' })
+        await tx.outBox.create({
+            data: {
+                eventType: 'UserRegistered',
+                userId: createdUser.id,
+                payload: {
+                    username,
+                    email,
+                    sessionToken,
+                    headers: requestToHeaders(request)
+                },
+            }
+        })
     })
-
-    await queue.registration.add('process-registration', {
-        userId: createdUser.id,
-        username,
-        email,
-    }, {
-        priority: 1,
-    })
-    reply.code(201).send()
+    return sendSuccess(reply, 201, 'User created successfully!', { sessionToken })
 }
 
 /**
  * 
+ * @param {import('fastify').FastifyInstance} fastify
  * @return {import('fastify').RouteHandlerMethod}
  */
-const loginUser = (fastify) => {
-    return async (request, reply) => {
-        const result = loginUserSchema.safeParse(request.body)
-        if (!result.success) {
-            const errors = result.error.errors.flatMap((err) => ({
-                path: err.path?.join('.') || err.keys?.join('.'),
-                message: err.message
-            }))
-            return sendError(reply, 400, 'Bad request', { errors: errors })
-        }
-        let { email, password } = request.body;
-        const user = await prisma.user.findFirst({
-            where: {
-                email
-            },
-            include: {
-                TwoFactorAuth: {
-                    where: {
-                        isEnabled: true
-                    }
+const loginUser = (fastify) => async (request, reply) => {
+    const result = loginUserSchema.safeParse(request.body)
+    if (!result.success) {
+        const errors = result.error.errors.flatMap((err) => ({
+            path: err.path?.join('.') || err.keys?.join('.'),
+            message: err.message
+        }))
+        return sendError(reply, 400, 'Bad request', { errors: errors })
+    }
+    let { email, password } = request.body;
+    const user = await prisma.user.findFirst({
+        where: {
+            email
+        },
+        include: {
+            TwoFactorAuth: {
+                where: {
+                    isEnabled: true
                 }
             }
-        })
-        if (!user)
-            return sendError(reply, 401, 'Email or Password incorrect!')
-        if (!hashCompare(password, user.passwordHashed))
-            return sendError(reply, 401, 'Email or Password incorrect!')
-        if (user.TwoFactorAuth.length > 0) {
-            const sessionToken = fastify.jwt.sign({ userId: user.id, stat: "awaiting_2fa" }, { expiresIn: '4m' })
-            return sendError(reply, 401, 'Please enter your 2FA code.', { status: '2fa_required', sessionToken, })
         }
-        const { accessToken, refreshToken } = await authService.newUserSession(fastify, request, user.id)
-        reply.code(200).send({ accessToken, refreshToken })
+    })
+    if (!user)
+        return sendError(reply, 401, 'Email or Password incorrect!')
+    if (!hashCompare(password, user.passwordHashed))
+        return sendError(reply, 401, 'Email or Password incorrect!')
+    if (!user.isVerified)
+        return sendError(reply, 401, 'You must verify your account, check your inbox!', { status: 'email_validation_required' })
+    if (user.TwoFactorAuth.length > 0) {
+        const sessionToken = fastify.jwt.sign({ userId: user.id, stat: "awaiting_2fa" }, { expiresIn: '4m' })
+        return sendError(reply, 401, 'Please enter your 2FA code.', { status: '2fa_required', sessionToken })
     }
+    const { accessToken, refreshToken } = await authService.newUserSession(fastify, request, user.id)
+    reply.code(200).send({ accessToken, refreshToken })
 }
 
 /**
@@ -177,7 +192,7 @@ const deleteSessionById = async (request, reply) => {
             deletedAt: new Date()
         }
     })
-    return sendSuccess(reply, 200, 'Session deleted successfuly!')
+    return sendSuccess(reply, 200, 'Session deleted successfully!')
 }
 
 /**
@@ -190,7 +205,7 @@ const verifyToken = async (request, reply) => {
         const user = await prisma.user.findUnique({
             where: {
                 id: payload.userId,
-                status: 'ACTIVE',
+                status: 'active',
                 deletedAt: null
             },
             include: {

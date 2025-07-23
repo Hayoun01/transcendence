@@ -25,6 +25,8 @@ const sendEmail = async (templateName, to, data) => {
     let subject;
     if (templateName === 'verifyEmail')
         subject = 'Verify Email Address to Activate your Account'
+    else if (templateName === 'welcome')
+        subject = 'Welcome to Transcendence 🏓'
     await transporter.sendMail({
         from: 'no-reply@transcendence.com',
         to,

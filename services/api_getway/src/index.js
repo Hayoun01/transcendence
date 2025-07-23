@@ -5,22 +5,37 @@ import { sendError } from './utils/fastify.js';
 import { environ } from './utils/env.js';
 import { pathToRegexp } from 'path-to-regexp'
 
-const fastify = Fastify({ logger: true });
+const fastify = Fastify({
+    genReqId: () => randomUUID(),
+    requestIdHeader: 'x-request-id',
+    logger: {
+        transport: {
+            targets: [
+                { target: 'pino-pretty', level: 'info' },
+                { target: 'pino/file', options: { destination: '../logs/api_gateway.log' }, level: 'info' }
+            ]
+        }
+    }
+});
 
 const publicRoutes = [
     '/api/v1/auth/login',
     '/api/v1/auth/register',
     '/api/v1/auth/verify',
+    '/api/v1/auth/otp/verify',
     '/api/v1/auth/refresh',
     '/api/v1/auth/oauth/:provider/callback',
     '/api/v1/auth/oauth/:provider',
+    '/api/v1/auth/2fa/challenge',
 ].map(path => pathToRegexp(path))
 
+
 fastify.addHook('onRequest', async (request, reply) => {
-    const uuid = randomUUID()
-    // TODO: trace request
-    request.headers['x-request-id'] = uuid
-    reply.header('x-request-id', uuid)
+    request.headers['x-request-id'] = request.id
+    reply.header('x-request-id', request.id)
+})
+
+fastify.addHook('onRequest', async (request, reply) => {
     const isInternal = request.url.includes('/internal/')
 
     if (isInternal) {

@@ -3,6 +3,7 @@ import { sendError, sendSuccess } from '../utils/fastify.js';
 import { authService } from '../services/auth.services.js';
 import { prisma } from '../db/prisma.js';
 import { environ } from '../utils/env.js';
+import { getQueue, QueueType } from '../services/queue.services.js';
 
 const providers = {
     google: {
@@ -38,61 +39,100 @@ export default (fastify, opts, done) => {
     })
     const getOAuthProfile = async (provider, code) => {
         const config = providers[provider]
-        if (provider === 'github') {
-            const { data: accessTokenData } = await axios.post(
-                config.tokenUrl,
-                {
-                    client_id: config.clientId,
-                    client_secret: config.clientSecret,
-                    code,
-                    redirect_uri: 'http://127.0.0.1:3000/api/v1/auth/oauth/github/callback'
-                },
-                {
-                    headers: { Accept: 'application/json' }
+        try {
+            if (provider === 'github') {
+                const { data: accessTokenData } = await axios.post(
+                    config.tokenUrl,
+                    {
+                        client_id: config.clientId,
+                        client_secret: config.clientSecret,
+                        code,
+                        redirect_uri: 'http://127.0.0.1:3000/api/v1/auth/oauth/github/callback'
+                    },
+                    {
+                        headers: { Accept: 'application/json' }
+                    }
+                )
+                const [{ data: profile }, { data: emails }] = await Promise.all([
+                    axios.get(config.profileUrl, {
+                        headers: { Authorization: `Bearer ${accessTokenData.access_token}` }
+                    }),
+                    axios.get('https://api.github.com/user/emails', {
+                        headers: { Authorization: `Bearer ${accessTokenData.access_token}` }
+                    })])
+
+                const primaryEmail = emails.find(email => email.primary)?.email || emails[0]?.email;
+
+                return {
+                    success: true,
+                    oAuthProfile: {
+                        id: profile.id.toString(),
+                        email: primaryEmail,
+                        name: profile.name || profile.login
+                    }
                 }
-            )
-            console.log(accessTokenData)
-            const { data: profile } = await axios.get(config.profileUrl, {
-                headers: { Authorization: `Bearer ${accessTokenData.access_token}` }
-            });
-            const { data: emails } = await axios.get('https://api.github.com/user/emails', {
-                headers: { Authorization: `Bearer ${accessTokenData.access_token}` }
-            });
-
-            const primaryEmail = emails.find(email => email.primary)?.email || emails[0]?.email;
-
-            return {
-                id: profile.id.toString(),
-                email: primaryEmail,
-                name: profile.name || profile.login
             }
+        } catch (e) {
+            console.log(e)
+            return { success: false, reason: 'Something went wrong' }
         }
-        return null
+        return { success: false, reason: 'Unsupported OAuth provider' }
     }
     fastify.get('/:provider/callback', async (request, reply) => {
         const { provider } = request.params
         const { code } = request.query
         const config = providers[provider]
-        const oAuthProfile = await getOAuthProfile(provider, code)
-        if (!oAuthProfile)
-            return sendError(reply, 400, 'Unsupported OAuth provider')
-        if (await authService.isUserExists(oAuthProfile.email))
-            return sendError(reply, 400, 'User already exists!')
-        await prisma.$transaction(async (tx) => {
-            const created_user = await tx.user.create({
-                data: {
-                    email: oAuthProfile.email
+        const { success, reason, oAuthProfile } = await getOAuthProfile(provider, code)
+        if (!success)
+            return sendError(reply, 400, reason)
+        const userExists = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    {
+                        email: oAuthProfile.email.toLowerCase().trim()
+                    },
+                    {
+                        OAuthLink: {
+                            some: {
+                                provider,
+                                providerId: oAuthProfile.id
+                            }
+                        }
+                    }
+                ]
+            },
+            include: {
+                OAuthLink: true
+            }
+        });
+        if (userExists && userExists.OAuthLink.some((link) => link.providerId === oAuthProfile.id && link.provider === provider)) {
+            const { accessToken, refreshToken } = await authService.newUserSession(fastify, request, userExists.id)
+            return sendSuccess(reply, 200, 'User already exists!', { accessToken, refreshToken })
+        }
+        else if (userExists) {
+            return sendError(reply, 400, `Account with ${oAuthProfile.email} already exists! log in to it and link your account to it`)
+        }
+        const created_user = await prisma.user.create({
+            data: {
+                email: oAuthProfile.email,
+                isVerified: true,
+                OAuthLink: {
+                    create: {
+                        provider: provider,
+                        providerId: oAuthProfile.id,
+                    }
                 }
-            })
-            await tx.oAuthLink.create({
-                data: {
-                    provider: provider.toUpperCase(),
-                    providerId: oAuthProfile.id,
-                    userId: created_user.id,
-                }
-            })
+            }
         })
-        return sendSuccess(reply, 201, 'User successfuly created!')
+        await getQueue(QueueType.EMAIL).add('welcome-email', {
+            email: oAuthProfile.email,
+            template: 'welcome',
+            context: {
+                username: oAuthProfile.name
+            }
+        })
+        const { accessToken, refreshToken } = await authService.newUserSession(fastify, request, created_user.id)
+        return sendSuccess(reply, 201, 'User successfully created!', { accessToken, refreshToken })
     })
     done()
 }

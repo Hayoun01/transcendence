@@ -14,7 +14,12 @@ const sendSuccess = (reply, statusCode, message, extra = {}) => {
     })
 }
 
+const requestToHeaders = (request) => ({
+    'x-request-id': request.headers['x-request-id']
+})
+
 export {
     sendError,
-    sendSuccess
+    sendSuccess,
+    requestToHeaders,
 }

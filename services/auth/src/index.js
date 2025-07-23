@@ -1,16 +1,23 @@
 import Fastify from 'fastify'
 import indexRoute from './routes/index.routes.js'
 import fastifyJwt from '@fastify/jwt'
-import fastifyCookie from '@fastify/cookie'
 import { environ } from './utils/env.js'
-import { prisma } from './db/prisma.js'
 import fastifyRateLimit from '@fastify/rate-limit'
-import Redis from 'ioredis'
 import { redis } from './db/redis.js'
-import { queue } from './services/queue.services.js'
+import { closeAll, getQueue, QueueType } from './services/queue.services.js'
+import { randomUUID } from 'crypto'
 
 const fastify = Fastify({
-    logger: true,
+    genReqId: () => randomUUID(),
+    requestIdHeader: 'x-request-id',
+    logger: {
+        transport: {
+            targets: [
+                { target: 'pino-pretty', level: 'info' },
+                { target: 'pino/file', options: { destination: '../logs/auth.log' }, level: 'info' }
+            ]
+        }
+    }
 })
 
 fastify.register(fastifyJwt, {
@@ -28,10 +35,22 @@ await fastify.register(fastifyRateLimit, {
     redis,
 })
 
-await fastify.register(fastifyCookie)
 await fastify.register(indexRoute, { prefix: '/api/v1' })
+
+fastify.addHook('onReady', async () => {
+    getQueue(QueueType.REGISTRATION)
+    getQueue(QueueType.NOTIFICATIONS)
+    getQueue(QueueType.EMAIL)
+})
+
 fastify.addHook('onClose', async () => {
-    await queue.registration.close()
+    await closeAll()
+})
+
+fastify.addHook('onRequest', async (request, reply) => {
+    // * trace request
+    request.headers['x-request-id'] = request.id
+    reply.header('x-request-id', request.id)
 })
 
 try {

@@ -4,7 +4,7 @@ CREATE TABLE "users" (
     "email" TEXT NOT NULL,
     "password_hashed" TEXT,
     "is_verified" BOOLEAN NOT NULL DEFAULT false,
-    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "status" TEXT NOT NULL DEFAULT 'active',
     "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" DATETIME NOT NULL,
     "deleted_at" DATETIME
@@ -25,7 +25,7 @@ CREATE TABLE "oauth_links" (
 CREATE TABLE "two_factor_auth" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "user_id" TEXT NOT NULL,
-    "method" TEXT NOT NULL DEFAULT 'TOTP',
+    "method" TEXT NOT NULL DEFAULT 'totp',
     "secret" TEXT,
     "iv" BLOB,
     "tag" BLOB,

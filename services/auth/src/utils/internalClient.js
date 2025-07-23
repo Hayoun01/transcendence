@@ -8,7 +8,7 @@ const signPayload = (payload) => {
     return crypto.createHmac('sha256', secret).update(payload).digest('hex')
 }
 
-export const postInternal = async (url, data = null) => {
+export const postInternal = async (url, data = null, headers = {}) => {
     const payload = JSON.stringify(data)
     const signature = signPayload(payload)
 
@@ -16,7 +16,8 @@ export const postInternal = async (url, data = null) => {
         method: 'POST',
         headers: {
             [headerName]: signature,
-            'content-type': 'application/json'
+            'content-type': 'application/json',
+            ...headers
         },
         body: payload
     })
