@@ -1,7 +1,7 @@
-const sendError = (reply, statusCode, message, extra = {}) => {
+const sendError = (reply, statusCode, error, extra = {}) => {
     return reply.code(statusCode).send({
         success: false,
-        message,
+        error,
         ...extra
     })
 }

@@ -4,7 +4,7 @@ import { sendError, sendSuccess } from '../utils/fastify.js'
 /**
  * @type {import('fastify').FastifyPluginCallback}
  */
-export default (fastify, opts, done) => {
+export default async (fastify) => {
     fastify.get('/health', (request, reply) => {
         return { message: 'healthy' }
     })
@@ -17,14 +17,14 @@ export default (fastify, opts, done) => {
             }
         })
         if (userExists)
-            return sendError(reply, 400, 'User already has a profile!')
+            return sendSuccess(reply, 201, 'USER_PROFILE_CREATED_SUCCESS')
         const user = await prisma.userProfile.create({
             data: {
                 id: userId,
                 username,
             }
         })
-        return sendSuccess(reply, 201, 'User profile created!')
+        return sendSuccess(reply, 201, 'USER_PROFILE_CREATED_SUCCESS')
     })
     fastify.post('/username-available', async (request, reply) => {
         const { username } = request.body
@@ -34,8 +34,40 @@ export default (fastify, opts, done) => {
             }
         })
         if (user)
-            return sendError(reply, 409, 'Username already taken!')
-        return sendSuccess(reply, 200, 'Username available!')
+            return sendError(reply, 409, 'USERNAME_TAKEN')
+        return sendSuccess(reply, 200, 'USERNAME_AVAILABLE')
     })
-    done()
+    fastify.post('/chat/permissions/:userId/:targetUserId', async (request, reply) => {
+        const { userId, targetUserId } = request.params
+        const friendship = await prisma.friendship.findUnique({
+            where: {
+                status: 'accepted',
+                OR: [
+                    {
+                        requesterId: userId,
+                    },
+                    {
+                        receiverId: userId,
+                    }
+                ],
+                NOT: [
+                    {
+                        requester: { BlockedUsers: { some: { blockedId: userId } } }
+                    },
+                    {
+                        receiver: { BlockedUsers: { some: { blockedId: userId } } }
+                    },
+                    {
+                        requester: { BlockedByUsers: { some: { blockerId: userId } } }
+                    },
+                    {
+                        receiver: { BlockedByUsers: { some: { blockerId: userId } } }
+                    },
+                ]
+            }
+        })
+        if (!friendship)
+            return sendError(reply, 401, '')
+        return sendSuccess(reply, 200, '')
+    })
 }

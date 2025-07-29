@@ -9,10 +9,9 @@ import { fileURLToPath } from 'url'
 
 let running_worker;
 
-const worker = () => new Worker(QueueType.REGISTRATION,
-    async (job) => {
-        console.log('Job (registration) started!')
-        const { userId, username, email, sessionToken, headers } = job.data
+const eventHandler = {
+    UserRegistered: async (payload, userId) => {
+        const { username, email, sessionToken, headers } = payload
         const otp = await otpServices.createOTP(prisma, userId, 'email_verification')
         await getQueue(QueueType.EMAIL).add('send-verification', {
             email,
@@ -22,12 +21,26 @@ const worker = () => new Worker(QueueType.REGISTRATION,
                 link: `http://localhost:3000/api/v1/auth/otp/verify?sessionToken=${sessionToken}&otp=${otp.token}`
             }
         })
-        const res = await postInternal('http://localhost:3002/api/v1/internal/profiles', {
+        const res = await postInternal('http://localhost:3002/internal/profiles', {
             userId,
             username,
         }, headers)
         if (!res.ok)
             throw new Error('Internal server error')
+    }
+}
+
+const worker = () => new Worker(QueueType.REGISTRATION,
+    async (job) => {
+        console.log('Job (registration) started!')
+        const { outboxId, userId, eventType, payload } = job.data
+        try {
+            await eventHandler[eventType](payload, userId)
+            await prisma.outBox.update({ where: { id: outboxId }, data: { status: 'processed' } })
+        } catch (e) {
+            await prisma.outBox.update({ where: { id: outboxId }, data: { status: 'failed' } })
+            throw e
+        }
         console.log('Job (registration) done')
     },
     {
@@ -35,6 +48,27 @@ const worker = () => new Worker(QueueType.REGISTRATION,
         concurrency: 5,
     }
 )
+
+setInterval(async () => {
+    const events = await prisma.outBox.findMany({
+        where: {
+            status: 'pending'
+        },
+        take: 10,
+        orderBy: { createdAt: 'asc' }
+    })
+
+    for (const event of events) {
+        await getQueue(QueueType.REGISTRATION).add('process-registration', {
+            outboxId: event.id,
+            userId: event.userId,
+            eventType: event.eventType,
+            payload: event.payload
+        })
+        await prisma.outBox.update({ where: { id: event.id }, data: { status: 'queued' } })
+    }
+}, 1000)
+
 
 process.on('SIGINT', async () => {
     await running_worker.close()
@@ -50,6 +84,7 @@ process.on('SIGTERM', async () => {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.log('Registration worker started!')
-    getQueue(QueueType.EMAIL)
     running_worker = worker()
+    getQueue(QueueType.EMAIL)
+    getQueue(QueueType.REGISTRATION)
 }

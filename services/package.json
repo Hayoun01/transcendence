@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "service:api_gateway": "cd ./api_gateway && npm run start:dev",
+    "service:auth": "cd ./auth && npm run start:dev",
+    "service:auth:workers": "cd ./auth && npm run start:workers",
+    "service:user-mgmt": "cd ./user-mgmt && npm run start:dev",
+    "service:chat": "cd ./chat && npm run start:dev",
+    "start": "run-p service:**"
+  },
+  "devDependencies": {
+    "npm-run-all2": "^8.0.4"
+  }
+}

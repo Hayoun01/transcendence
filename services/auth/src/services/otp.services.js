@@ -19,6 +19,10 @@ const generateOTP = () => {
 const createOTP = async (prisma, userId, type, expiresIn = 4) => {
     const expiresAt = new Date()
     expiresAt.setMinutes(expiresAt.getMinutes() + expiresIn)
+    await prisma.verificationToken.updateMany({
+        where: { userId, type, deletedAt: null },
+        data: { deletedAt: new Date() }
+    })
     return prisma.verificationToken.create({
         data: {
             token: generateOTP(),

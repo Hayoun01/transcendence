@@ -37,7 +37,7 @@ export default (fastify, opts, done) => {
             })
         return sendError(reply, 400, 'Unsupported OAuth provider')
     })
-    const getOAuthProfile = async (provider, code) => {
+    const getOAuthProfile = async (provider, code, redirect_uri) => {
         const config = providers[provider]
         try {
             if (provider === 'github') {
@@ -47,7 +47,7 @@ export default (fastify, opts, done) => {
                         client_id: config.clientId,
                         client_secret: config.clientSecret,
                         code,
-                        redirect_uri: 'http://127.0.0.1:3000/api/v1/auth/oauth/github/callback'
+                        redirect_uri
                     },
                     {
                         headers: { Accept: 'application/json' }
@@ -82,7 +82,11 @@ export default (fastify, opts, done) => {
         const { provider } = request.params
         const { code } = request.query
         const config = providers[provider]
-        const { success, reason, oAuthProfile } = await getOAuthProfile(provider, code)
+        const { success, reason, oAuthProfile } = await getOAuthProfile(
+            provider,
+            code,
+            `http://127.0.0.1:3000/api/v1/auth/oauth/${provider}/callback`
+        )
         if (!success)
             return sendError(reply, 400, reason)
         const userExists = await prisma.user.findFirst({
@@ -133,6 +137,9 @@ export default (fastify, opts, done) => {
         })
         const { accessToken, refreshToken } = await authService.newUserSession(fastify, request, created_user.id)
         return sendSuccess(reply, 201, 'User successfully created!', { accessToken, refreshToken })
+    })
+    fastify.post('/link', async (request, reply) => {
+        // const { provider, code, }
     })
     done()
 }

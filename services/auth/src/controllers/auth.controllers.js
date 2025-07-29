@@ -27,7 +27,7 @@ const registerUser = (fastify) => async (request, reply) => {
     let { email, password, username } = request.body;
     const [userExists, usernameAvailable] = await Promise.all([
         authService.isUserExists(email),
-        postInternal('http://localhost:3002/api/v1/internal/username-available', { username }, requestToHeaders(request)),
+        postInternal('http://localhost:3002/internal/username-available', { username }, requestToHeaders(request)),
     ]);
 
     if (userExists) {
@@ -38,7 +38,7 @@ const registerUser = (fastify) => async (request, reply) => {
         return sendError(reply, 409, 'Username already taken!');
     }
 
-    await prisma.$transaction(async (tx) => {
+    const { sessionToken } = await prisma.$transaction(async (tx) => {
         const createdUser = await tx.user.create({
             data: {
                 email,
@@ -64,8 +64,9 @@ const registerUser = (fastify) => async (request, reply) => {
                 },
             }
         })
+        return { sessionToken }
     })
-    return sendSuccess(reply, 201, 'User created successfully!', { sessionToken })
+    return sendSuccess(reply, 201, 'Registration successful. Verification email will be sent shortly.', { sessionToken })
 }
 
 /**

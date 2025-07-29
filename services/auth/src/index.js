@@ -16,6 +16,16 @@ const fastify = Fastify({
                 { target: 'pino-pretty', level: 'info' },
                 { target: 'pino/file', options: { destination: '../logs/auth.log' }, level: 'info' }
             ]
+        },
+        serializers: {
+            req: (req) => ({
+                method: req.method,
+                url: req.url,
+                host: req.host,
+                remoteAddress: req.ip,
+                remotePort: req.port,
+                userId: req.headers['x-user-id'] || undefined
+            })
         }
     }
 })
@@ -51,6 +61,13 @@ fastify.addHook('onRequest', async (request, reply) => {
     // * trace request
     request.headers['x-request-id'] = request.id
     reply.header('x-request-id', request.id)
+    if (request.headers['x-user-id']) {
+        request.log = request.log.child({ userId: request.headers['x-user-id'] })
+    }
+})
+
+
+fastify.addHook('preHandler', async (request, reply) => {
 })
 
 try {

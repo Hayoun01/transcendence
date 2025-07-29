@@ -127,6 +127,22 @@ exports.Prisma.UserProfileScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.FriendshipScalarFieldEnum = {
+  id: 'id',
+  requesterId: 'requesterId',
+  receiverId: 'receiverId',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.BlockedUserScalarFieldEnum = {
+  id: 'id',
+  blockerId: 'blockerId',
+  blockedId: 'blockedId',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -136,10 +152,17 @@ exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
 };
-
+exports.FriendshipStatus = exports.$Enums.FriendshipStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  declined: 'declined',
+  canceled: 'canceled'
+};
 
 exports.Prisma.ModelName = {
-  UserProfile: 'UserProfile'
+  UserProfile: 'UserProfile',
+  Friendship: 'Friendship',
+  BlockedUser: 'BlockedUser'
 };
 
 /**

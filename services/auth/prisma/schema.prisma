@@ -20,7 +20,7 @@ model User {
   isVerified     Boolean    @default(false) @map("is_verified")
   status         UserStatus @default(active)
   createdAt      DateTime   @default(now()) @map("created_at")
-  updatedAt      DateTime   @default(now()) @updatedAt @map("updated_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
   deletedAt      DateTime?  @map("deleted_at")
 
   OAuthLink         OAuthLink[]
@@ -44,7 +44,7 @@ model OAuthLink {
   provider   OAuthProvider
   providerId String        @map("provider_id")
   createdAt  DateTime      @default(now()) @map("created_at")
-  updatedAt  DateTime      @default(now()) @updatedAt @map("updated_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
 
   user User @relation(references: [id], fields: [userId])
 
@@ -68,7 +68,7 @@ model TwoFactorAuth {
   isEnabled   Boolean             @default(false) @map("is_enabled")
   isVerified  Boolean             @default(false) @map("is_verified")
   createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
 
   user User @relation(references: [id], fields: [userId])
 
@@ -121,7 +121,7 @@ model OutBox {
   payload   Json
   status    String   @default("pending")
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user User @relation(references: [id], fields: [userId])
 

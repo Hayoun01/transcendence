@@ -1,15 +1,20 @@
-const sendError = (reply, statusCode, message, extra = {}) => {
+import errorMessages from "../schemas/errorMessages.js"
+import successMessages from "../schemas/successMessages.js"
+
+const sendError = (reply, statusCode, code, extra = {}) => {
     return reply.code(statusCode).send({
         success: false,
-        message,
+        code,
+        error: errorMessages[code],
         ...extra
     })
 }
 
-const sendSuccess = (reply, statusCode, message, extra = {}) => {
+const sendSuccess = (reply, statusCode, code, extra = {}) => {
     return reply.code(statusCode).send({
         success: true,
-        message,
+        code,
+        message: successMessages[code],
         ...extra
     })
 }

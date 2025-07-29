@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto'
 import { sendError } from './utils/fastify.js';
 import { environ } from './utils/env.js';
 import { pathToRegexp } from 'path-to-regexp'
+import fastifyCors from '@fastify/cors'
 
 const fastify = Fastify({
     genReqId: () => randomUUID(),
@@ -17,6 +18,8 @@ const fastify = Fastify({
         }
     }
 });
+
+await fastify.register(fastifyCors)
 
 const publicRoutes = [
     '/api/v1/auth/login',
@@ -44,14 +47,30 @@ fastify.addHook('onRequest', async (request, reply) => {
     const url = request.url.split('?')[0]
     if (publicRoutes.some(regex => regex.regexp.test(url)))
         return
+    let headers = request.headers;
+    if (request.url.startsWith('/ws/')) {
+        const url = new URL(request.url, `http://${request.headers.host}`);
+        const token = url.searchParams.get('token')
+        console.log('token:', token)
+        headers = {
+            'authorization': `Bearer ${token}`
+        }
+    }
     const result = await fetch('http://localhost:3001/api/v1/verify', {
         method: 'GET',
-        headers: request.headers,
+        headers,
     })
     if (!result.ok)
         return sendError(reply, 401, 'Unauthorized')
     const response = await result.json();
-    request.headers['x-user-id'] = response.userId
+    if (request.url.startsWith('/ws/')) {
+        const url = new URL(request.url, `http://${request.headers.host}`);
+        url.searchParams.delete('token')
+        url.searchParams.set('userId', response.userId)
+        request.raw.url = url.pathname + url.search
+    } else {
+        request.headers['x-user-id'] = response.userId
+    }
 })
 
 fastify.register(proxy, {
@@ -63,7 +82,20 @@ fastify.register(proxy, {
 fastify.register(proxy, {
     upstream: 'http://localhost:3002',
     prefix: '/api/v1/user-mgmt',
-    rewritePrefix: '/api/v1',
+    rewritePrefix: '/',
+})
+
+fastify.register(proxy, {
+    upstream: 'http://localhost:3003',
+    prefix: '/api/v1/chat',
+    rewritePrefix: '/',
+})
+
+fastify.register(proxy, {
+    wsUpstream: 'ws://localhost:3003',
+    prefix: '/ws/chat',
+    rewritePrefix: '/',
+    websocket: true,
 })
 
 fastify.get('/health', (request, reply) => {

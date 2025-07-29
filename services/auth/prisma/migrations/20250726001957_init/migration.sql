@@ -64,6 +64,18 @@ CREATE TABLE "sessions" (
     CONSTRAINT "sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
+-- CreateTable
+CREATE TABLE "out_box" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "user_id" TEXT NOT NULL,
+    "event_type" TEXT NOT NULL,
+    "payload" JSONB NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL,
+    CONSTRAINT "out_box_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 

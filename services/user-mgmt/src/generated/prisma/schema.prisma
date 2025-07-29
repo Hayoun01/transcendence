@@ -9,13 +9,52 @@ datasource db {
 }
 
 model UserProfile {
-  id         String   @id
-  username   String   @unique
-  avatarPath String?  @map("avatar_path")
-  avatarName String?  @map("avatar_name")
-  bio        String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id                String        @id
+  username          String        @unique
+  avatarPath        String?       @map("avatar_path")
+  avatarName        String?       @map("avatar_name")
+  bio               String?
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  sentFriendReq     Friendship[]  @relation("Requester")
+  receivedFriendReq Friendship[]  @relation("Receiver")
+  BlockedUsers      BlockedUser[] @relation("BlockedUsers")
+  BlockedByUsers    BlockedUser[] @relation("BlockedByUsers")
 
-  @@map("user_profile")
+  @@map("user_profiles")
+}
+
+enum FriendshipStatus {
+  pending
+  accepted
+  declined
+  canceled
+}
+
+model Friendship {
+  id          String           @id @default(uuid())
+  requesterId String           @map("requester_id")
+  receiverId  String           @map("receiver_id")
+  status      FriendshipStatus @default(pending)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  requester UserProfile @relation("Requester", references: [id], fields: [requesterId])
+  receiver  UserProfile @relation("Receiver", references: [id], fields: [receiverId])
+
+  @@unique([requesterId, receiverId])
+  @@map("friendships")
+}
+
+model BlockedUser {
+  id        String   @id @default(uuid())
+  blockerId String   @map("blocker_id")
+  blockedId String   @map("blocked_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  blocker UserProfile @relation("BlockedUsers", references: [id], fields: [blockerId])
+  blocked UserProfile @relation("BlockedByUsers", references: [id], fields: [blockedId])
+
+  @@unique([blockerId, blockedId])
+  @@map("blocked_users")
 }
