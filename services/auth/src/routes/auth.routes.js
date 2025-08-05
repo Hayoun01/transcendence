@@ -11,11 +11,11 @@ import { sendError, sendSuccess } from '../utils/fastify.js';
 export default (fastify, opts, done) => {
     fastify.post('/register', authControllers.registerUser(fastify));
     fastify.post('/login', {
-        preHandler: [fastify.rateLimit({
-            keyGenerator: (req) => {
-                return `auth:login:${req.ip}:${req.headers['user-agent']}`
-            },
-        })],
+        // preHandler: [fastify.rateLimit({
+        //     keyGenerator: (req) => {
+        //         return `auth:login:${req.ip}:${req.headers['user-agent']}`
+        //     },
+        // })],
     }, authControllers.loginUser(fastify));
 
     fastify.post('/refresh', authControllers.refreshToken)

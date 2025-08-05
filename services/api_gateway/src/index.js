@@ -5,6 +5,7 @@ import { sendError } from './utils/fastify.js';
 import { environ } from './utils/env.js';
 import { pathToRegexp } from 'path-to-regexp'
 import fastifyCors from '@fastify/cors'
+import fastifyMetrics from 'fastify-metrics'
 
 const fastify = Fastify({
     genReqId: () => randomUUID(),
@@ -101,5 +102,11 @@ fastify.register(proxy, {
 fastify.get('/health', (request, reply) => {
     return { message: 'healthy' }
 })
+
+
+await fastify.register(fastifyMetrics, {
+    endpoint: '/api/v1/metrics',
+    defaultMetrics: true
+});
 
 fastify.listen({ port: environ.PORT })

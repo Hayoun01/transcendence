@@ -18,6 +18,19 @@ export default async (fastify, opts) => {
                     select: {
                         userId: true
                     }
+                },
+                messages: {
+                    orderBy: {
+                        createdAt: 'asc',
+                    },
+                    where: {
+                        deletedAt: null,
+                    },
+                    take: 1,
+                    select: {
+                        content: true,
+                        senderId: true,
+                    }
                 }
             }
         })
@@ -26,7 +39,7 @@ export default async (fastify, opts) => {
     fastify.get('/conversations/:id', async (request, reply) => {
         const userId = request.headers['x-user-id']
         const { id } = request.params
-        return prisma.conversation.findUnique({
+        const conversation = await prisma.conversation.findUnique({
             where: {
                 id,
                 members: {
@@ -52,6 +65,9 @@ export default async (fastify, opts) => {
                 }
             }
         })
+        if (!conversation)
+            return reply.status(404).send()
+        return conversation
     })
 
     fastify.post('/conversations/:id', async (request, reply) => {
@@ -104,6 +120,7 @@ export default async (fastify, opts) => {
             return reply.status(400).send({ error: 'error' })
         const chat = await prisma.conversation.findFirst({
             where: {
+                deletedAt: null,
                 AND: [
                     { members: { every: { userId: { in: [userId, targetUserId] } } } },
                     { members: { some: { userId } } },

@@ -39,7 +39,42 @@ export default async (fastify) => {
     })
     fastify.post('/chat/permissions/:userId/:targetUserId', async (request, reply) => {
         const { userId, targetUserId } = request.params
-        const friendship = await prisma.friendship.findUnique({
+        const friendship = await prisma.friendship.findFirst({
+            where: {
+                status: 'accepted',
+                OR: [
+                    {
+                        requesterId: userId,
+                        receiverId: targetUserId,
+                    },
+                    {
+                        requesterId: targetUserId,
+                        receiverId: userId,
+                    }
+                ],
+                NOT: [
+                    {
+                        requester: { BlockedUsers: { some: { blockedId: userId } } }
+                    },
+                    {
+                        receiver: { BlockedUsers: { some: { blockedId: userId } } }
+                    },
+                    {
+                        requester: { BlockedByUsers: { some: { blockerId: userId } } }
+                    },
+                    {
+                        receiver: { BlockedByUsers: { some: { blockerId: userId } } }
+                    },
+                ]
+            }
+        })
+        if (!friendship)
+            return sendError(reply, 401, '')
+        return sendSuccess(reply, 200, '')
+    })
+    fastify.post('/friends/:userId', async (request, reply) => {
+        const { userId } = request.params
+        const res = await prisma.friendship.findMany({
             where: {
                 status: 'accepted',
                 OR: [
@@ -64,10 +99,20 @@ export default async (fastify) => {
                         receiver: { BlockedByUsers: { some: { blockerId: userId } } }
                     },
                 ]
+            },
+            select: {
+                requester: {
+                    select: {
+                        id: true,
+                    }
+                },
+                receiver: {
+                    select: {
+                        id: true,
+                    }
+                },
             }
         })
-        if (!friendship)
-            return sendError(reply, 401, '')
-        return sendSuccess(reply, 200, '')
+        return res.map((f) => (f.requester.id === userId ? f.receiver.id : f.requester.id))
     })
 }
