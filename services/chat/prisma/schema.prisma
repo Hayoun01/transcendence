@@ -14,7 +14,7 @@ enum ConversationType {
 }
 
 model Conversation {
-  id        String           @id @default(uuid())
+  id        String           @id @default(uuid(7))
   name      String?
   type      ConversationType @default(direct)
   createdAt DateTime         @default(now()) @map("created_at")
@@ -28,7 +28,7 @@ model Conversation {
 }
 
 model ChatMember {
-  id             String    @id @default(uuid())
+  id             String    @id @default(uuid(7))
   userId         String
   conversationId String
   deletedAt      DateTime? @map("deleted_at")
@@ -45,7 +45,7 @@ enum MessageType {
 }
 
 model Message {
-  id             String      @id @default(uuid())
+  id             String      @id @default(uuid(7))
   senderId       String
   type           MessageType @default(text)
   content        String

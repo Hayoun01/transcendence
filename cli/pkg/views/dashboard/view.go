@@ -17,6 +17,8 @@ func (m *DashboardModel) View() string {
 			title = fmt.Sprintf("friends (%d)", len(m.friends))
 		case *messagesTab:
 			title = "messages"
+		case *gameTab:
+			title = "Ping Pong"
 		}
 		style := tabStyle
 		if i == m.activeTab {

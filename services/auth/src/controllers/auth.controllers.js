@@ -1,236 +1,280 @@
-import { loginUserSchema, refreshTokenSchema, registerUserSchema } from '../schemas/auth.schemas.js';
-import { z } from 'zod';
-import { v4 as uuid } from 'uuid';
-import { hashCompare, hashPassword } from '../utils/bcrypt.js';
-import { prisma } from '../db/prisma.js';
-import { authService } from '../services/auth.services.js';
-import { requestToHeaders, sendError, sendSuccess } from '../utils/fastify.js';
-import { postInternal } from '../utils/internalClient.js';
-import otpServices from '../services/otp.services.js';
-import mailer from '../utils/mailer.js';
-import { getQueue, QueueType } from '../services/queue.services.js';
+import {
+  loginUserSchema,
+  refreshTokenSchema,
+  registerUserSchema,
+} from "../schemas/auth.schemas.js";
+import { z } from "zod";
+import { v4 as uuid } from "uuid";
+import { hashCompare, hashPassword } from "../utils/bcrypt.js";
+import { prisma } from "../db/prisma.js";
+import { authService } from "../services/auth.services.js";
+import { requestToHeaders, sendError, sendSuccess } from "../utils/fastify.js";
+import { postInternal } from "../utils/internalClient.js";
+import otpServices from "../services/otp.services.js";
+import mailer from "../utils/mailer.js";
+import { getQueue, QueueType } from "../services/queue.services.js";
+import { environ } from "../utils/env.js";
 
 /**
- * 
+ *
  * @param {import('fastify').FastifyInstance} fastify
  * @return {import('fastify').RouteHandlerMethod}
  */
 const registerUser = (fastify) => async (request, reply) => {
-    const result = registerUserSchema.safeParse(request.body)
-    if (!result.success) {
-        const errors = result.error.errors.flatMap((err) => ({
-            path: err.path?.join('.') || err.keys?.join('.'),
-            message: err.message
-        }))
-        return sendError(reply, 400, 'Bad request', { errors: errors })
-    }
-    let { email, password, username } = request.body;
-    const [userExists, usernameAvailable] = await Promise.all([
-        authService.isUserExists(email),
-        postInternal('http://localhost:3002/internal/username-available', { username }, requestToHeaders(request)),
-    ]);
+  const result = registerUserSchema.safeParse(request.body);
+  if (!result.success) {
+    const errors = result.error.errors.flatMap((err) => ({
+      path: err.path?.join(".") || err.keys?.join("."),
+      message: err.message,
+    }));
+    return sendError(reply, 400, "Bad request", { errors: errors });
+  }
+  let { email, password, username } = request.body;
+  const [userExists, usernameAvailable] = await Promise.all([
+    authService.isUserExists(email),
+    postInternal(
+      "http://localhost:3002/internal/username-available",
+      { username },
+      requestToHeaders(request)
+    ),
+  ]);
 
-    if (userExists) {
-        return sendError(reply, 409, 'User already exists!');
-    }
+  if (userExists) {
+    return sendError(reply, 409, "User already exists!");
+  }
 
-    if (!usernameAvailable.ok) {
-        return sendError(reply, 409, 'Username already taken!');
-    }
+  if (!usernameAvailable.ok) {
+    return sendError(reply, 409, "Username already taken!");
+  }
 
-    const { sessionToken } = await prisma.$transaction(async (tx) => {
-        const createdUser = await tx.user.create({
-            data: {
-                email,
-                passwordHashed: hashPassword(password)
-            },
-            select: {
-                id: true
-            }
-        })
-        const sessionToken = fastify.jwt.sign({
-            userId: createdUser.id,
-            type: "email_verification"
-        }, { expiresIn: '4m' })
-        await tx.outBox.create({
-            data: {
-                eventType: 'UserRegistered',
-                userId: createdUser.id,
-                payload: {
-                    username,
-                    email,
-                    sessionToken,
-                    headers: requestToHeaders(request)
-                },
-            }
-        })
-        return { sessionToken }
-    })
-    return sendSuccess(reply, 201, 'Registration successful. Verification email will be sent shortly.', { sessionToken })
-}
+  const { sessionToken } = await prisma.$transaction(async (tx) => {
+    const createdUser = await tx.user.create({
+      data: {
+        email,
+        passwordHashed: hashPassword(password),
+      },
+      select: {
+        id: true,
+      },
+    });
+    const sessionToken = fastify.jwt.sign(
+      {
+        userId: createdUser.id,
+        type: "email_verification",
+      },
+      { expiresIn: "4m" }
+    );
+    await tx.outBox.create({
+      data: {
+        eventType: "UserRegistered",
+        userId: createdUser.id,
+        payload: {
+          username,
+          email,
+          sessionToken,
+          headers: requestToHeaders(request),
+        },
+      },
+    });
+    return { sessionToken };
+  });
+  return sendSuccess(
+    reply,
+    201,
+    "Registration successful. Verification email will be sent shortly.",
+    { sessionToken }
+  );
+};
 
 /**
- * 
+ *
  * @param {import('fastify').FastifyInstance} fastify
  * @return {import('fastify').RouteHandlerMethod}
  */
 const loginUser = (fastify) => async (request, reply) => {
-    const result = loginUserSchema.safeParse(request.body)
-    if (!result.success) {
-        const errors = result.error.errors.flatMap((err) => ({
-            path: err.path?.join('.') || err.keys?.join('.'),
-            message: err.message
-        }))
-        return sendError(reply, 400, 'Bad request', { errors: errors })
-    }
-    let { email, password } = request.body;
-    const user = await prisma.user.findFirst({
+  const result = loginUserSchema.safeParse(request.body);
+  if (!result.success) {
+    const errors = result.error.errors.flatMap((err) => ({
+      path: err.path?.join(".") || err.keys?.join("."),
+      message: err.message,
+    }));
+    return sendError(reply, 400, "Bad request", { errors: errors });
+  }
+  let { email, password } = request.body;
+  const user = await prisma.user.findFirst({
+    where: {
+      email,
+    },
+    include: {
+      TwoFactorAuth: {
         where: {
-            email
+          isEnabled: true,
         },
-        include: {
-            TwoFactorAuth: {
-                where: {
-                    isEnabled: true
-                }
-            }
-        }
-    })
-    if (!user)
-        return sendError(reply, 401, 'Email or Password incorrect!')
-    if (!hashCompare(password, user.passwordHashed))
-        return sendError(reply, 401, 'Email or Password incorrect!')
-    if (!user.isVerified)
-        return sendError(reply, 401, 'You must verify your account, check your inbox!', { status: 'email_validation_required' })
-    if (user.TwoFactorAuth.length > 0) {
-        const sessionToken = fastify.jwt.sign({ userId: user.id, stat: "awaiting_2fa" }, { expiresIn: '4m' })
-        return sendError(reply, 401, 'Please enter your 2FA code.', { status: '2fa_required', sessionToken })
-    }
-    const { accessToken, refreshToken } = await authService.newUserSession(fastify, request, user.id)
-    reply.code(200).send({ accessToken, refreshToken })
-}
+      },
+    },
+  });
+  if (!user) return sendError(reply, 401, "Email or Password incorrect!");
+  if (!hashCompare(password, user.passwordHashed))
+    return sendError(reply, 401, "Email or Password incorrect!");
+  if (!user.isVerified)
+    return sendError(
+      reply,
+      401,
+      "You must verify your account, check your inbox!",
+      { status: "email_validation_required" }
+    );
+  if (user.TwoFactorAuth.length > 0) {
+    const sessionToken = fastify.jwt.sign(
+      { userId: user.id, stat: "awaiting_2fa" },
+      { expiresIn: "4m" }
+    );
+    return sendError(reply, 401, "Please enter your 2FA code.", {
+      status: "2fa_required",
+      sessionToken,
+    });
+  }
+  const { accessToken, refreshToken } = await authService.newUserSession(
+    fastify,
+    request,
+    user.id
+  );
+  reply.setCookie("token", accessToken, {
+    path: "/",
+    secure: environ.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 3600,
+    signed: true,
+    httpOnly: true,
+  });
+  reply.code(200).send({ accessToken, refreshToken });
+};
 
 /**
- * 
+ *
  * @type {import('fastify').RouteHandlerMethod}
  */
 const refreshToken = async (request, reply) => {
-    const result = refreshTokenSchema.safeParse(request.body)
-    if (!result.success) {
-        const errors = result.error.errors.flatMap((err) => ({
-            path: err.path?.join('.') || err.keys?.join('.'),
-            message: err.message
-        }))
-        return sendError(reply, 400, 'Bad request', { errors: errors })
-    }
-    const { refreshToken } = request.body
-    const session = await prisma.session.findUnique({
-        where: {
-            refreshToken
-        }
-    })
-    if (!session)
-        return sendError(reply, 401, 'Invalid refresh token')
-    const now = new Date()
-    if (session.deletedAt || session.expiresAt < now)
-        return sendError(reply, 401, 'Refresh token expired')
-    const userAgent = request.headers['user-agent']
-    if (userAgent !== session.userAgent)
-        return sendError(reply, 401, 'Invalid session')
-    await prisma.session.update({
-        where: {
-            id: session.id
-        },
-        data: {
-            deletedAt: new Date()
-        }
-    })
-    const userSession = await authService.newUserSession(fastify, request, session.userId)
-    return { accessToken: userSession.accessToken, refreshToken: userSession.refreshToken }
-}
+  const result = refreshTokenSchema.safeParse(request.body);
+  if (!result.success) {
+    const errors = result.error.errors.flatMap((err) => ({
+      path: err.path?.join(".") || err.keys?.join("."),
+      message: err.message,
+    }));
+    return sendError(reply, 400, "Bad request", { errors: errors });
+  }
+  const { refreshToken } = request.body;
+  const session = await prisma.session.findUnique({
+    where: {
+      refreshToken,
+    },
+  });
+  if (!session) return sendError(reply, 401, "Invalid refresh token");
+  const now = new Date();
+  if (session.deletedAt || session.expiresAt < now)
+    return sendError(reply, 401, "Refresh token expired");
+  const userAgent = request.headers["user-agent"];
+  if (userAgent !== session.userAgent)
+    return sendError(reply, 401, "Invalid session");
+  await prisma.session.update({
+    where: {
+      id: session.id,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
+  });
+  const userSession = await authService.newUserSession(
+    fastify,
+    request,
+    session.userId
+  );
+  return {
+    accessToken: userSession.accessToken,
+    refreshToken: userSession.refreshToken,
+  };
+};
 
 /**
- * 
+ *
  * @type {import('fastify').RouteHandlerMethod}
  */
 const getAllUserSessions = async (request, reply) => {
-    const userId = request.headers['x-user-id']
-    return prisma.session.findMany({
-        where: {
-            userId,
-            deletedAt: null
-        },
-        select: {
-            id: true,
-            ipAddress: true,
-            userAgent: true,
-            createdAt: true
-        }
-    })
-}
+  const userId = request.headers["x-user-id"];
+  return prisma.session.findMany({
+    where: {
+      userId,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      ipAddress: true,
+      userAgent: true,
+      createdAt: true,
+    },
+  });
+};
 
 /**
- * 
+ *
  * @type {import('fastify').RouteHandlerMethod}
  */
 const deleteSessionById = async (request, reply) => {
-    const userId = request.headers['x-user-id']
-    const { session_id } = request.params
-    const session = await prisma.session.findUnique({
-        where: {
-            id: session_id,
-            userId,
-            deletedAt: null,
-        }
-    })
-    if (!session)
-        return sendError(reply, 404, 'Session not found!')
-    await prisma.session.update({
-        where: {
-            id: session.id
-        },
-        data: {
-            deletedAt: new Date()
-        }
-    })
-    return sendSuccess(reply, 200, 'Session deleted successfully!')
-}
+  const userId = request.headers["x-user-id"];
+  const { session_id } = request.params;
+  const session = await prisma.session.findUnique({
+    where: {
+      id: session_id,
+      userId,
+      deletedAt: null,
+    },
+  });
+  if (!session) return sendError(reply, 404, "Session not found!");
+  await prisma.session.update({
+    where: {
+      id: session.id,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
+  });
+  return sendSuccess(reply, 200, "Session deleted successfully!");
+};
 
 /**
- * 
+ *
  * @type {import('fastify').RouteHandlerMethod}
  */
 const verifyToken = async (request, reply) => {
-    try {
-        const payload = await request.jwtVerify()
-        const user = await prisma.user.findUnique({
-            where: {
-                id: payload.userId,
-                status: 'active',
-                deletedAt: null
-            },
-            include: {
-                Session: {
-                    where: {
-                        token: request.headers.authorization?.substring(7),
-                        deletedAt: null
-                    }
-                }
-            }
-        })
-        if (!user || !user.Session.length)
-            return reply.code(401).send({ error: 'Unauthorized' })
-        reply.code(200).send({ userId: user.id })
-    } catch (e) {
-        reply.code(401).send({ error: 'Unauthorized' })
-    }
-}
+  try {
+    const payload = await request.jwtVerify();
+    const user = await prisma.user.findUnique({
+      where: {
+        id: payload.userId,
+        status: "active",
+        deletedAt: null,
+      },
+      include: {
+        Session: {
+          where: {
+            token: request.headers.authorization?.substring(7),
+            deletedAt: null,
+          },
+        },
+      },
+    });
+    if (!user || !user.Session.length)
+      return reply.code(401).send({ error: "Unauthorized" });
+    reply.code(200).send({ userId: user.id });
+  } catch (e) {
+    reply.code(401).send({ error: "Unauthorized" });
+  }
+};
 
 export const authControllers = {
-    registerUser,
-    loginUser,
-    refreshToken,
-    getAllUserSessions,
-    deleteSessionById,
-    verifyToken,
-}
+  registerUser,
+  loginUser,
+  refreshToken,
+  getAllUserSessions,
+  deleteSessionById,
+  verifyToken,
+};

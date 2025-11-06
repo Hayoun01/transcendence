@@ -14,7 +14,7 @@ enum UserStatus {
 }
 
 model User {
-  id             String     @id @default(uuid())
+  id             String     @id @default(uuid(7))
   email          String     @unique
   passwordHashed String?    @map("password_hashed")
   isVerified     Boolean    @default(false) @map("is_verified")
@@ -39,7 +39,7 @@ enum OAuthProvider {
 }
 
 model OAuthLink {
-  id         String        @id @default(uuid())
+  id         String        @id @default(uuid(7))
   userId     String        @map("user_id")
   provider   OAuthProvider
   providerId String        @map("provider_id")
@@ -58,7 +58,7 @@ enum TwoFactorAuthMethod {
 }
 
 model TwoFactorAuth {
-  id          String              @id @default(uuid())
+  id          String              @id @default(uuid(7))
   userId      String              @map("user_id")
   method      TwoFactorAuthMethod @default(totp)
   secret      String?
@@ -81,7 +81,7 @@ enum VerificationTokenType {
 }
 
 model VerificationToken {
-  id        String                @id @default(uuid())
+  id        String                @id @default(uuid(7))
   userId    String                @map("user_id")
   token     String
   type      VerificationTokenType
@@ -97,7 +97,7 @@ model VerificationToken {
 }
 
 model Session {
-  id           String    @id @default(uuid())
+  id           String    @id @default(uuid(7))
   userId       String    @map("user_id")
   token        String    @unique
   refreshToken String    @unique @map("refresh_token")
@@ -115,7 +115,7 @@ model Session {
 }
 
 model OutBox {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid(7))
   userId    String   @map("user_id")
   eventType String   @map("event_type")
   payload   Json

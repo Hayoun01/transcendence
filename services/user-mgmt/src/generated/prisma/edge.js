@@ -147,7 +147,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/home/hayyoun/web/trascendence/services/user-mgmt/src/generated/prisma",
+      "value": "/home/mhayyoun/code/transcendence/services/user-mgmt/src/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -161,7 +161,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/home/hayyoun/web/trascendence/services/user-mgmt/prisma/schema.prisma",
+    "sourceFilePath": "/home/mhayyoun/code/transcendence/services/user-mgmt/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

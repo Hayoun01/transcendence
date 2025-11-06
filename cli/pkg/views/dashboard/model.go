@@ -3,10 +3,8 @@ package dashboard
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/Hayoun01/transcendence/pkg/app"
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gorilla/websocket"
@@ -72,68 +70,6 @@ func (i item) Title() string       { return i.title }
 func (i item) Description() string { return i.desc }
 func (i item) FilterValue() string { return i.title }
 
-type friendsTab struct {
-	friends *map[string]friend
-	list    list.Model
-}
-
-func newFriendsTab(friends *map[string]friend) *friendsTab {
-	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	l.DisableQuitKeybindings()
-	l.SetShowTitle(false)
-	l.SetShowStatusBar(false)
-	l.SetShowHelp(false)
-	return &friendsTab{friends: friends, list: l}
-}
-
-func (m *friendsTab) Init() tea.Cmd {
-	return nil
-}
-
-func (m *friendsTab) SyncList() {
-	var items []list.Item
-	for _, friend := range *m.friends {
-		desc := "offline"
-		if friend.Online {
-			desc = "online"
-		}
-		items = append(items, item{title: friend.Username, desc: desc})
-	}
-	m.list.SetItems(items)
-}
-
-func (m *friendsTab) Update(msg tea.Msg) (tabModel, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v-3)
-	}
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
-}
-
-func (m *friendsTab) View() string {
-	return docStyle.Render(m.list.View())
-}
-
-type messagesTab struct {
-}
-
-func newMessagesTab() *messagesTab {
-	return &messagesTab{}
-}
-
-func (m *messagesTab) Init() tea.Cmd {
-	return nil
-}
-func (m *messagesTab) Update(msg tea.Msg) (tabModel, tea.Cmd) {
-	return m, nil
-}
-func (m *messagesTab) View() string {
-	return "messagesTab"
-}
-
 func NewDashboardModel() *DashboardModel {
 	friends := make(map[string]friend)
 	return &DashboardModel{
@@ -141,6 +77,7 @@ func NewDashboardModel() *DashboardModel {
 		tabs: []tabModel{
 			newFriendsTab(&friends),
 			newMessagesTab(),
+			newGameTab(),
 		},
 		friends: friends,
 	}
@@ -196,7 +133,6 @@ func (m *DashboardModel) StartWebSocket() tea.Cmd {
 
 func (m *DashboardModel) FetchData() tea.Cmd {
 	return func() tea.Msg {
-		time.Sleep(time.Second)
 		req, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:3000/api/v1/user-mgmt/friends", nil)
 		if err != nil {
 			return nil
