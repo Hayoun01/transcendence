@@ -23,6 +23,10 @@ export default (fastify, opts, done) => {
     },
     authControllers.loginUser(fastify)
   );
+  fastify.post("/logout", async (request, reply) => {
+    reply.clearCookie("token", { path: "/" });
+    return;
+  });
 
   fastify.post("/refresh", authControllers.refreshToken);
 
