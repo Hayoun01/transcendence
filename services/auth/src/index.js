@@ -57,9 +57,9 @@ await fastify.register(fastifyRateLimit, {
 await fastify.register(indexRoute, { prefix: "/api/v1" });
 
 fastify.addHook("onReady", async () => {
-  getQueue(QueueType.REGISTRATION);
-  getQueue(QueueType.NOTIFICATIONS);
-  getQueue(QueueType.EMAIL);
+  // getQueue(QueueType.REGISTRATION);
+  // getQueue(QueueType.NOTIFICATIONS);
+  // getQueue(QueueType.EMAIL);
 });
 
 fastify.addHook("onClose", async () => {

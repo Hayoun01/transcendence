@@ -1,3 +1,5 @@
+import { prisma } from "../db/prisma.js";
+
 const isFriendShipExists = async (userId, targetUserId) => {
   return !!(await prisma.friendship.findFirst({
     where: {

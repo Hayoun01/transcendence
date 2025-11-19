@@ -162,9 +162,4 @@ export default async (fastify) => {
 
     return sendError(reply, 400, "UNSUPPORTED_ACTION");
   });
-
-  fastify.get("/friendships", async (request, reply) => {
-    const friendships = await prisma.friendship.findMany();
-    return friendships;
-  });
 };

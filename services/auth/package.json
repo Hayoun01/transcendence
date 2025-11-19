@@ -4,11 +4,11 @@
   "description": "ping pong game",
   "main": "./src/index.js",
   "scripts": {
-    "start:dev": "nodemon ./src/index.js",
-    "worker:email": "nodemon -w src/workers src/workers/email.worker.js",
-    "worker:registration": "nodemon -w src/workers src/workers/main.worker.js",
+    "start:dev": "bun --watch ./src/index.js",
+    "worker:email": "bun --watch run src/workers/email.worker.js",
+    "worker:registration": "bun --watch run src/workers/main.worker.js",
     "start:workers": "run-p worker:*",
-    "start": "node ./src/index.js"
+    "start": "bun ./src/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -35,7 +35,6 @@
   },
   "type": "module",
   "devDependencies": {
-    "nodemon": "^3.1.10",
     "npm-run-all2": "^8.0.4",
     "prisma": "^6.11.1"
   }

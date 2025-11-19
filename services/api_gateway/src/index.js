@@ -32,6 +32,8 @@ await fastify.register(fastifyCors);
 const publicRoutes = [
   "/api/v1/auth/login",
   "/api/v1/auth/forget-password",
+  "/api/v1/auth/reset-password",
+  "/api/v1/auth/resend-verification",
   "/api/v1/auth/register",
   "/api/v1/auth/verify",
   "/api/v1/auth/otp/verify",
@@ -44,7 +46,7 @@ const publicRoutes = [
 fastify.addHook("onRequest", async (request, reply) => {
   request.headers["x-request-id"] = request.id;
   reply.header("x-request-id", request.id);
-  console.log(request.cookies.token);
+  // console.log(request.cookies.token);
 });
 
 fastify.addHook("onRequest", async (request, reply) => {

@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import fastifyWebsocket from "@fastify/websocket";
 import { randomUUID } from "crypto";
 import indexRoutes from "./routes/index.routes.js";
+import rabbitmq from "./plugins/rabbitmq.js";
 
 const fastify = Fastify({
   genReqId: () => randomUUID(),
@@ -21,6 +22,7 @@ const fastify = Fastify({
 });
 
 fastify.register(fastifyWebsocket);
+fastify.register(rabbitmq);
 fastify.register(indexRoutes, { prefix: "/" });
 
 try {

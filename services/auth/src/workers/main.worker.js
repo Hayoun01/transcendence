@@ -35,6 +35,22 @@ const eventHandler = {
     );
     if (!res.ok) throw new Error("Internal server error");
   },
+  ResendVerification: async (payload, userId) => {
+    const { email, sessionToken } = payload;
+    const otp = await otpServices.createOTP(
+      prisma,
+      userId,
+      "email_verification"
+    );
+    await getQueue(QueueType.EMAIL).add("send-verification", {
+      email,
+      template: "verifyEmail",
+      context: {
+        code: otp.token,
+        link: `http://localhost:3000/api/v1/auth/otp/verify?sessionToken=${sessionToken}&otp=${otp.token}`,
+      },
+    });
+  },
 };
 
 const worker = () =>

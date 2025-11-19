@@ -37,9 +37,46 @@ export default (fastify) => {
     });
   });
   fastify.get("/notifications", async (request, reply) => {
-    const notifications = await prisma.notification.findMany();
+    const userId = request.headers["x-user-id"];
+    console.log(userId);
+    const notifications = await prisma.notification.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
     return notifications;
   });
+
+  fastify.patch(
+    "/notifications/:notificationId/read",
+    async (request, reply) => {
+      const userId = request.headers["x-user-id"];
+      const notificationId = request.params.notificationId;
+      const notification = await prisma.notification.findUnique({
+        where: {
+          id: notificationId,
+          userId,
+          deletedAt: null,
+        },
+      });
+      // ! Change error message
+      if (!notification) return reply.send({ error: "Not found!" });
+      if (notification.readAt)
+        return reply.send({ error: "Already read this notification!" });
+      const updated = await prisma.notification.update({
+        where: { id: notification.id },
+        data: {
+          readAt: new Date(),
+        },
+      });
+      return updated;
+    }
+  );
+
   fastify.post("/notifications", async (request, reply) => {
     const data = request.body;
     const notification = await prisma.notification.create({
@@ -48,15 +85,30 @@ export default (fastify) => {
     broadcastToUser(data);
     return notification;
   });
+
+  fastify.post("/notifications/read_all", async (request, reply) => {
+    const userId = request.headers["x-user-id"];
+    const notification = await prisma.notification.updateMany({
+      where: {
+        userId,
+        readAt: null,
+        deletedAt: null,
+      },
+      data: {
+        readAt: new Date(),
+      },
+    });
+    return { success: true, ...notification };
+  });
 };
 
-setInterval(() => {
-  let count = 0;
-  let totalClients = 0;
-  for (const conn of users) {
-    totalClients++;
-    count += conn[1].size;
-  }
-  console.log(`Active clients: ${totalClients}`);
-  console.log(`Active connections: ${count}`);
-}, 1000);
+// setInterval(() => {
+//   let count = 0;
+//   let totalClients = 0;
+//   for (const conn of users) {
+//     totalClients++;
+//     count += conn[1].size;
+//   }
+//   console.log(`Active clients: ${totalClients}`);
+//   console.log(`Active connections: ${count}`);
+// }, 1000);

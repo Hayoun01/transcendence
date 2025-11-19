@@ -12,6 +12,7 @@ async function consumer() {
   await channel.assertExchange(exchange, "topic", { durable: true });
   await channel.assertQueue(queue, { durable: true });
   await channel.bindQueue(queue, exchange, "user.created");
+  await channel.bindQueue(queue, exchange, "message.new");
 
   //   try {
   //     await channel.prefetch(1);
@@ -24,12 +25,15 @@ async function consumer() {
     async (msg) => {
       if (msg) {
         try {
-          const content = JSON.parse(msg.content.toString());
-          console.log(`[>] Notification service received:`, content);
-          await prisma.notification.create({
-            data: content,
-          });
-          broadcastToUser(content);
+          if (msg.fields.routingKey) {
+            console.log(msg.fields.routingKey);
+            const content = JSON.parse(msg.content.toString());
+            console.log(`[>] Notification service received:`, content);
+            await prisma.notification.create({
+              data: content,
+            });
+            broadcastToUser(content);
+          }
         } catch (err) {
           console.error("[!] Failed to parse message content:", err);
         }

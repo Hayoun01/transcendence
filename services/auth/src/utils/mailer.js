@@ -29,9 +29,15 @@ const renderTemplate = async (templateName, data) => {
 const sendEmail = async (templateName, to, data) => {
   const html = await renderTemplate(templateName, data);
   let subject;
-  if (templateName === "verifyEmail")
+  if (templateName === "verifyEmail") {
     subject = "Verify Email Address to Activate your Account";
-  else if (templateName === "welcome") subject = "Welcome to Transcendence 🏓";
+  } else if (templateName === "welcome") {
+    subject = "Welcome to Transcendence 🏓";
+  } else if (templateName === "passwordReset") {
+    subject = "Password Reset";
+  } else if (templateName === "passwordResetConfirmation") {
+    subject = "Your password was reset";
+  }
   await transporter.sendMail({
     from: environ.MAIL_SENDER,
     to,

@@ -1,6 +1,6 @@
 import amqp from "amqplib";
-// import { setTimeout } from "timers/promises";
-import { randomUUID } from "crypto";
+// import { setTimeout as st } from "timers/promises";
+// import { randomUUID } from "crypto";
 
 const exchange = "user.events";
 
@@ -11,13 +11,13 @@ async function publish() {
   await channel.assertExchange(exchange, "topic", { durable: true });
   console.log("Channel created!");
   const event = {
-    userId: "a8d8eaa0-aaa4-441f-8c27-4adadeb79f41",
+    userId: "019a9b4d-80dd-7770-982a-922fba66892d",
     type: "SYSTEM",
     title: "Welcome to transcendence",
     content: "We're happy to have you here, play and enjoy games",
   };
   const routingKey = "user.created";
-  //   await setTimeout(20000);
+  // await st(1000);
   channel.publish(exchange, routingKey, Buffer.from(JSON.stringify(event)), {
     persistent: true,
   });
