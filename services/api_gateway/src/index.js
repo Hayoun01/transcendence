@@ -27,7 +27,11 @@ const fastify = Fastify({
 
 fastify.register(fastifyCookie);
 
-await fastify.register(fastifyCors);
+await fastify.register(fastifyCors, {
+  origin: environ.CORS_ORIGIN,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "OPTIONS"],
+});
 
 const publicRoutes = [
   "/api/v1/auth/login",
