@@ -2,7 +2,6 @@
   "scripts": {
     "service:api_gateway": "cd ./api_gateway && bun start:dev",
     "service:auth": "cd ./auth && bun start:dev",
-    "service:auth:workers": "cd ./auth && bun start:workers",
     "service:user-mgmt": "cd ./user-mgmt && bun start:dev",
     "service:chat": "cd ./chat && bun start:dev",
     "start": "run-p service:**"

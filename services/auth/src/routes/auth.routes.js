@@ -25,10 +25,11 @@ export default (fastify, opts, done) => {
   );
   fastify.post("/logout", async (request, reply) => {
     reply.clearCookie("token", { path: "/" });
+    reply.clearCookie("refreshToken", { path: "/" });
     return;
   });
 
-  fastify.post("/refresh", authControllers.refreshToken);
+  fastify.post("/refresh", authControllers.refreshToken(fastify));
 
   fastify.get("/sessions", authControllers.getAllUserSessions);
 

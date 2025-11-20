@@ -35,7 +35,7 @@ const fastify = Fastify({
   },
 });
 
-fastify.register(fastifyCookie, {
+await fastify.register(fastifyCookie, {
   secret: environ.COOKIE_SECRET,
 });
 

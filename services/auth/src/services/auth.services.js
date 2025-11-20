@@ -11,7 +11,7 @@ const isUserExists = async (email) => {
 };
 
 const newUserSession = async (fastify, request, userId) => {
-  const accessToken = fastify.jwt.sign({ userId }, { expiresIn: "24h" });
+  const accessToken = fastify.jwt.sign({ userId }, { expiresIn: "15m" });
   const refreshToken = randomUUID();
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);

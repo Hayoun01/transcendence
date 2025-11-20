@@ -142,27 +142,30 @@ const loginUser = (fastify) => async (request, reply) => {
     path: "/",
     secure: environ.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 3600,
+    maxAge: 60 * 15,
     signed: true,
     httpOnly: true,
   });
-  reply.code(200).send({ accessToken, refreshToken });
+  reply.setCookie("refreshToken", refreshToken, {
+    path: "/",
+    secure: environ.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7,
+    signed: true,
+    httpOnly: true,
+  });
+  return;
 };
 
 /**
  *
  * @type {import('fastify').RouteHandlerMethod}
  */
-const refreshToken = async (request, reply) => {
-  const result = refreshTokenSchema.safeParse(request.body);
-  if (!result.success) {
-    const errors = result.error.errors.flatMap((err) => ({
-      path: err.path?.join(".") || err.keys?.join("."),
-      message: err.message,
-    }));
-    return sendError(reply, 400, "Bad request", { errors: errors });
-  }
-  const { refreshToken } = request.body;
+const refreshToken = (fastify) => async (request, reply) => {
+  console.log(request.cookies);
+  const refreshToken =
+    request.body?.refreshToken ||
+    request.unsignCookie(request.cookies.refreshToken).value;
   const session = await prisma.session.findUnique({
     where: {
       refreshToken,
@@ -188,10 +191,23 @@ const refreshToken = async (request, reply) => {
     request,
     session.userId
   );
-  return {
-    accessToken: userSession.accessToken,
-    refreshToken: userSession.refreshToken,
-  };
+  reply.setCookie("token", userSession.accessToken, {
+    path: "/",
+    secure: environ.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 15,
+    signed: true,
+    httpOnly: true,
+  });
+  reply.setCookie("refreshToken", userSession.refreshToken, {
+    path: "/",
+    secure: environ.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7,
+    signed: true,
+    httpOnly: true,
+  });
+  return;
 };
 
 /**

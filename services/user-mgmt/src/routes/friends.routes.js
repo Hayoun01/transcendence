@@ -136,6 +136,19 @@ export default async (fastify) => {
           status: "accepted",
         },
       });
+      await fastify.rabbit.channel.publish(
+        "user.events",
+        "friendship.created",
+        Buffer.from(
+          JSON.stringify({
+            requesterId: friendship.requesterId,
+            receiverId: friendship.receiverId,
+          })
+        ),
+        {
+          persistent: true,
+        }
+      );
       return sendSuccess(reply, 200, "FRD_REQ_ACCEPTED_SUCCESS");
     } else if (action === "remove") {
       if (friendship.status !== "accepted")
@@ -143,6 +156,19 @@ export default async (fastify) => {
       await prisma.friendship.delete({
         where: { id: friendship.id },
       });
+      await fastify.rabbit.channel.publish(
+        "user.events",
+        "friendship.removed",
+        Buffer.from(
+          JSON.stringify({
+            requesterId: friendship.requesterId,
+            receiverId: friendship.receiverId,
+          })
+        ),
+        {
+          persistent: true,
+        }
+      );
       return sendSuccess(reply, 200, "FRD_REMOVED_SUCCESS");
     } else if (action === "cancel") {
       if (friendship.requesterId !== userId)

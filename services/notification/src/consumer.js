@@ -1,6 +1,10 @@
 import amqp from "amqplib";
 import { prisma } from "./db/prisma.js";
 import { broadcastToUser } from "./routes/notification.routes.js";
+import {
+  addFriendshipToCache,
+  removeFriendshipFromCache,
+} from "./utils/cache.js";
 
 const exchange = "user.events";
 const queue = "notifications.queue";
@@ -11,8 +15,9 @@ async function consumer() {
 
   await channel.assertExchange(exchange, "topic", { durable: true });
   await channel.assertQueue(queue, { durable: true });
-  await channel.bindQueue(queue, exchange, "user.created");
-  await channel.bindQueue(queue, exchange, "message.new");
+  await channel.bindQueue(queue, exchange, "user.*");
+  await channel.bindQueue(queue, exchange, "friendship.*");
+  await channel.bindQueue(queue, exchange, "message.*");
 
   //   try {
   //     await channel.prefetch(1);
@@ -25,14 +30,26 @@ async function consumer() {
     async (msg) => {
       if (msg) {
         try {
-          if (msg.fields.routingKey) {
-            console.log(msg.fields.routingKey);
-            const content = JSON.parse(msg.content.toString());
-            console.log(`[>] Notification service received:`, content);
-            await prisma.notification.create({
-              data: content,
-            });
-            broadcastToUser(content);
+          const payload = JSON.parse(msg.content.toString());
+          switch (msg.fields.routingKey) {
+            case "user.created":
+              console.log(msg.fields.routingKey);
+              console.log(`[>] Notification service received:`, payload);
+              await prisma.notification.create({
+                data: payload,
+              });
+              broadcastToUser(payload);
+              break;
+            case "friendship.created":
+              console.log(payload);
+              addFriendshipToCache(payload);
+              break;
+            case "friendship.removed":
+              console.log(payload);
+              removeFriendshipFromCache(payload);
+              break;
+            default:
+              console.log(payload);
           }
         } catch (err) {
           console.error("[!] Failed to parse message content:", err);

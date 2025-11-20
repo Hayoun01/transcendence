@@ -1,5 +1,6 @@
 import { prisma } from "../db/prisma.js";
 import { sendError, sendSuccess } from "../utils/fastify.js";
+import { isFriendShipExists } from "../utils/friendship.js";
 
 /**
  * @type {import('fastify').FastifyPluginCallback}
@@ -52,25 +53,58 @@ export default async (fastify) => {
         blockedId: targetUserId,
       },
     });
+    const friendshipExists = await isFriendShipExists(userId, targetUserId);
+    if (friendshipExists) {
+      await fastify.rabbit.channel.publish(
+        "user.events",
+        "friendship.removed",
+        Buffer.from(
+          JSON.stringify({
+            requesterId: userId,
+            receiverId: targetUserId,
+          })
+        ),
+        {
+          persistent: true,
+        }
+      );
+    }
     return sendSuccess(reply, 200, "USER_BLOCKED_SUCCESS");
   });
   fastify.delete("/blocks/:blockedId", async (request, reply) => {
     const userId = request.headers["x-user-id"];
     const { blockedId } = request.params;
-
-    if (
-      !(await prisma.blockedUser.findUnique({
-        where: {
-          id: blockedId,
-          blockerId: userId,
-        },
-      }))
-    ) {
+    const blocked = await prisma.blockedUser.findUnique({
+      where: {
+        id: blockedId,
+        blockerId: userId,
+      },
+    });
+    if (!blocked) {
       return sendError(reply, 404, "NOT_FOUND");
     }
     await prisma.blockedUser.delete({
       where: { id: blockedId },
     });
+    const friendshipExists = await isFriendShipExists(
+      userId,
+      blocked.blockedId
+    );
+    if (friendshipExists) {
+      await fastify.rabbit.channel.publish(
+        "user.events",
+        "friendship.created",
+        Buffer.from(
+          JSON.stringify({
+            requesterId: userId,
+            receiverId: blocked.blockedId,
+          })
+        ),
+        {
+          persistent: true,
+        }
+      );
+    }
     return sendSuccess(reply, 200, "USER_UNBLOCKED_SUCCESS");
   });
 };
