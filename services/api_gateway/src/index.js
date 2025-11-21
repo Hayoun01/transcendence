@@ -34,7 +34,7 @@ fastify.register(helmet, {
 await fastify.register(fastifyCors, {
   origin: environ.CORS_ORIGIN,
   credentials: true,
-  methods: ["GET", "POST", "PUT", "OPTIONS", "PATCH"],
+  methods: ["GET", "POST", "PUT", "OPTIONS", "PATCH", "DELETE"],
 });
 
 const publicRoutes = [
