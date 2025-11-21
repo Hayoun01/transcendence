@@ -37,6 +37,7 @@ const showMyProfile = async (request, reply) => {
     select: {
       id: true,
       username: true,
+      language: true,
       bio: true,
     },
   });

@@ -5,5 +5,3 @@ export const redis = new IORedis({
   port: 6379,
   maxRetriesPerRequest: null,
 });
-
-console.log("New instance created!");

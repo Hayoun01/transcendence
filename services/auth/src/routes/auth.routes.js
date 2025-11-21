@@ -24,6 +24,27 @@ export default (fastify, opts, done) => {
     authControllers.loginUser(fastify)
   );
   fastify.post("/logout", async (request, reply) => {
+    const refreshToken =
+      request.body?.refreshToken ||
+      request.unsignCookie(request.cookies.refreshToken).value;
+    const session = await prisma.session.findUnique({
+      where: {
+        refreshToken,
+      },
+    });
+    if (session) {
+      const now = new Date();
+      if (!session.deletedAt && session.expiresAt >= now) {
+        await prisma.session.update({
+          where: {
+            id: session.id,
+          },
+          data: {
+            expiresAt: new Date(),
+          },
+        });
+      }
+    }
     reply.clearCookie("token", { path: "/" });
     reply.clearCookie("refreshToken", { path: "/" });
     return;

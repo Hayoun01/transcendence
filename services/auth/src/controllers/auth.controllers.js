@@ -162,13 +162,18 @@ const loginUser = (fastify) => async (request, reply) => {
  * @type {import('fastify').RouteHandlerMethod}
  */
 const refreshToken = (fastify) => async (request, reply) => {
-  console.log(request.cookies);
-  const refreshToken =
-    request.body?.refreshToken ||
-    request.unsignCookie(request.cookies.refreshToken).value;
+  const refreshToken = () => {
+    if (request.body?.refreshToken) {
+      return request.body?.refreshToken;
+    }
+    if (request.cookies.refreshToken) {
+      return request.unsignCookie(request.cookies.refreshToken).value;
+    }
+    return "";
+  };
   const session = await prisma.session.findUnique({
     where: {
-      refreshToken,
+      refreshToken: refreshToken(),
     },
   });
   if (!session) return sendError(reply, 401, "Invalid refresh token");

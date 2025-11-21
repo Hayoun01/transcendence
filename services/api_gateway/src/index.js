@@ -50,7 +50,6 @@ const publicRoutes = [
 fastify.addHook("onRequest", async (request, reply) => {
   request.headers["x-request-id"] = request.id;
   reply.header("x-request-id", request.id);
-  // console.log(request.cookies.token);
 });
 
 fastify.addHook("onRequest", async (request, reply) => {

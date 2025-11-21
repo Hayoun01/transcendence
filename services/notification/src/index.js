@@ -5,7 +5,20 @@ import consumer from "./consumer.js";
 import { cacheFriendships } from "./utils/cache.js";
 
 const fastify = Fastify({
-  logger: true,
+  genReqId: () => randomUUID(),
+  requestIdHeader: "x-request-id",
+  logger: {
+    transport: {
+      targets: [
+        { target: "pino-pretty", level: "info" },
+        {
+          target: "pino/file",
+          options: { destination: "../logs/user-mgmt.log" },
+          level: "info",
+        },
+      ],
+    },
+  },
 });
 
 fastify.register(import("@fastify/websocket"));

@@ -12,10 +12,10 @@ async function listFriendships() {
 }
 
 export async function cacheFriendships() {
-  const time = Date.now();
   const relationships = await getInternal(
     "http://127.0.0.1:3002/internal/friendships"
   );
+  const time = Date.now();
 
   const arr = [];
 

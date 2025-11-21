@@ -8,12 +8,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum LanguageType {
+  eng
+  fr
+}
+
 model UserProfile {
   id                String        @id
   username          String        @unique
   avatarPath        String?       @map("avatar_path")
   avatarName        String?       @map("avatar_name")
   bio               String?
+  language          LanguageType  @default(eng)
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
   sentFriendReq     Friendship[]  @relation("Requester")
