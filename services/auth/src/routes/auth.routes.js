@@ -58,31 +58,24 @@ export default (fastify, opts, done) => {
 
   fastify.get("/verify", authControllers.verifyToken);
 
-  // request password reset - sends an OTP to the user's email
   fastify.post("/forget-password", async (request, reply) => {
     const { email } = request.body;
     const user = await prisma.user.findUnique({
       where: { email, deletedAt: null },
     });
-    // Always return success to avoid leaking which emails are registered
     if (!user)
       return sendSuccess(reply, 200, "PASSWORD_RESET_SENT_IF_ASSOCIATED");
-
-    // create an OTP for password reset (valid for 60 minutes)
     const otp = await otpServices.createOTP(
       prisma,
       user.id,
       "password_reset",
       60
     );
-
-    // enqueue email job
     await getQueue(QueueType.EMAIL).add("password-reset", {
       email: user.email,
       template: "passwordReset",
       context: {
         code: otp.token,
-        // link that the frontend can use to prefill userId and otp
         link: `http://localhost:3000/reset-password?userId=${user.id}&otp=${otp.token}`,
       },
     });
@@ -109,7 +102,7 @@ export default (fastify, opts, done) => {
         where: {
           email,
           deletedAt: null,
-          // isVerified: false,
+          isVerified: false,
         },
       });
       if (user) {

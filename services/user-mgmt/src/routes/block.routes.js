@@ -24,15 +24,13 @@ export default async (fastify) => {
       },
     });
   });
-  fastify.post("/blocks", async (request, reply) => {
+  fastify.post("/blocks/:targetId", async (request, reply) => {
     const userId = request.headers["x-user-id"];
-    const { targetUserId } = request.body;
-    if (userId === targetUserId)
+    const { targetId } = request.params;
+    if (userId === targetId)
       return sendError(reply, 400, "USER_CANNOT_BLOCK_SELF");
     // ! replace it
-    if (
-      !(await prisma.userProfile.findUnique({ where: { id: targetUserId } }))
-    ) {
+    if (!(await prisma.userProfile.findUnique({ where: { id: targetId } }))) {
       return sendError(reply, 404, "USER_NOT_FOUND");
     }
     if (
@@ -40,7 +38,7 @@ export default async (fastify) => {
         where: {
           blockerId_blockedId: {
             blockerId: userId,
-            blockedId: targetUserId,
+            blockedId: targetId,
           },
         },
       })
@@ -50,10 +48,10 @@ export default async (fastify) => {
     await prisma.blockedUser.create({
       data: {
         blockerId: userId,
-        blockedId: targetUserId,
+        blockedId: targetId,
       },
     });
-    const friendshipExists = await isFriendShipExists(userId, targetUserId);
+    const friendshipExists = await isFriendShipExists(userId, targetId);
     if (friendshipExists) {
       await fastify.rabbit.channel.publish(
         "user.events",
@@ -61,7 +59,7 @@ export default async (fastify) => {
         Buffer.from(
           JSON.stringify({
             requesterId: userId,
-            receiverId: targetUserId,
+            receiverId: targetId,
           })
         ),
         {
