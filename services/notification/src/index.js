@@ -1,8 +1,8 @@
 import Fastify from "fastify";
 import indexRoutes from "./routes/index.routes.js";
-import helmet from "@fastify/helmet";
 import consumer from "./consumer.js";
 import { cacheFriendships } from "./utils/cache.js";
+import websocket from "@fastify/websocket";
 
 const fastify = Fastify({
   genReqId: () => randomUUID(),
@@ -21,8 +21,7 @@ const fastify = Fastify({
   },
 });
 
-fastify.register(import("@fastify/websocket"));
-fastify.register(helmet);
+fastify.register(websocket);
 fastify.register(indexRoutes);
 fastify.addHook("onReady", () => {
   cacheFriendships().catch((error) => {

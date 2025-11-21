@@ -7,6 +7,7 @@ import { pathToRegexp } from "path-to-regexp";
 import fastifyCors from "@fastify/cors";
 import fastifyMetrics from "fastify-metrics";
 import fastifyCookie from "@fastify/cookie";
+import helmet from "@fastify/helmet";
 
 const fastify = Fastify({
   genReqId: () => randomUUID(),
@@ -26,6 +27,7 @@ const fastify = Fastify({
 });
 
 fastify.register(fastifyCookie);
+fastify.register(helmet);
 
 await fastify.register(fastifyCors, {
   origin: environ.CORS_ORIGIN,
