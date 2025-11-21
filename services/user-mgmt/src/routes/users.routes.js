@@ -184,17 +184,13 @@ export default async (fastify) => {
     return users;
   });
 
-  fastify.get("/users/:identifier", async (request, reply) => {
+  fastify.get("/users/@:username", async (request, reply) => {
     const currentUser = request.headers["x-user-id"];
-    const { identifier } = request.params;
-    let where = {
-      username: identifier,
-    };
-    if (isValidUUID(identifier)) where = { id: identifier };
-    console.log(currentUser);
+    const { username } = request.params;
+
     const user = await prisma.userProfile.findUnique({
       where: {
-        ...where,
+        username,
         BlockedUsers: { none: { blockedId: currentUser } },
       },
       select: {
@@ -207,17 +203,16 @@ export default async (fastify) => {
     return user;
   });
 
-  // fastify.get("/users/:userId", async (request, reply) => {
-  //   const { userId } = request.params;
-  //   const currentUser = request.headers["x-user-id"];
-  //   console.log(currentUser);
-  //   const user = await prisma.userProfile.findUnique({
-  //     where: {
-  //       id: userId,
-  //       BlockedUsers: { none: { blockedId: currentUser } },
-  //     },
-  //   });
-  //   if (!user) return sendError(reply, 404, "USER_NOT_FOUND");
-  //   return user;
-  // });
+  fastify.get("/users/:userId", async (request, reply) => {
+    const currentUser = request.headers["x-user-id"];
+    const { userId } = request.params;
+    const user = await prisma.userProfile.findUnique({
+      where: {
+        id: userId,
+        BlockedUsers: { none: { blockedId: currentUser } },
+      },
+    });
+    if (!user) return sendError(reply, 404, "USER_NOT_FOUND");
+    return user;
+  });
 };
