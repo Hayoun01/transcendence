@@ -77,7 +77,7 @@ export default async (fastify) => {
     usersControllers.showMyAvatar
   );
   fastify.get(
-    "/:username/avatar",
+    "/@:username/avatar",
     {
       schema: {
         tags: ["User"],
@@ -184,7 +184,7 @@ export default async (fastify) => {
     return users;
   });
 
-  fastify.get("/users/@:username", async (request, reply) => {
+  fastify.get("/@:username", async (request, reply) => {
     const currentUser = request.headers["x-user-id"];
     const { username } = request.params;
 
@@ -203,7 +203,7 @@ export default async (fastify) => {
     return user;
   });
 
-  fastify.get("/users/:userId", async (request, reply) => {
+  fastify.get("/:userId", async (request, reply) => {
     const currentUser = request.headers["x-user-id"];
     const { userId } = request.params;
     const user = await prisma.userProfile.findUnique({
