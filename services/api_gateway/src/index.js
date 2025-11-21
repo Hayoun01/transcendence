@@ -27,7 +27,9 @@ const fastify = Fastify({
 });
 
 fastify.register(fastifyCookie);
-fastify.register(helmet);
+fastify.register(helmet, {
+  crossOriginResourcePolicy: { policy: "same-site" },
+});
 
 await fastify.register(fastifyCors, {
   origin: environ.CORS_ORIGIN,
