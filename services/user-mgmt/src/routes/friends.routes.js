@@ -117,7 +117,7 @@ export default async (fastify) => {
 
   fastify.patch("/friends/:targetId/:action", async (request, reply) => {
     const userId = request.headers["x-user-id"];
-    const { friendshipId: targetId, action } = request.params;
+    const { targetId, action } = request.params;
 
     const friendship = await prisma.friendship.findFirst({
       where: {
