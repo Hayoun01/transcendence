@@ -115,13 +115,16 @@ export default async (fastify) => {
     return sendSuccess(reply, 200, "FRD_REQ_SENT_SUCCESS");
   });
 
-  fastify.patch("/friends/:friendshipId/:action", async (request, reply) => {
+  fastify.patch("/friends/:targetId/:action", async (request, reply) => {
     const userId = request.headers["x-user-id"];
-    const { friendshipId, action } = request.params;
+    const { friendshipId: targetId, action } = request.params;
 
-    const friendship = await prisma.friendship.findUnique({
+    const friendship = await prisma.friendship.findFirst({
       where: {
-        id: friendshipId,
+        OR: [
+          { receiverId: userId, requesterId: targetId },
+          { receiverId: targetId, requesterId: userId },
+        ],
       },
     });
     if (!friendship) return sendError(reply, 400, "NO_SUCH_FRIENDSHIP_ID");
