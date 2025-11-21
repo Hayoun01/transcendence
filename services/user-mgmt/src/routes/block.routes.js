@@ -8,7 +8,7 @@ import { isFriendShipExists } from "../utils/friendship.js";
 export default async (fastify) => {
   fastify.get("/blocks", async (request, reply) => {
     const userId = request.headers["x-user-id"];
-    return await prisma.blockedUser.findMany({
+    const blocks = await prisma.blockedUser.findMany({
       where: {
         blockerId: userId,
       },
@@ -23,6 +23,12 @@ export default async (fastify) => {
         createdAt: true,
       },
     });
+    return blocks.map((blocks) => ({
+      id: blocks.id,
+      userId: blocks.blocked.id,
+      username: blocks.blocked.username,
+      createdAt: blocks.createdAt,
+    }));
   });
   fastify.post("/blocks/:targetId", async (request, reply) => {
     const userId = request.headers["x-user-id"];
