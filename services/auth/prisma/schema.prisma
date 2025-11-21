@@ -99,7 +99,6 @@ model VerificationToken {
 model Session {
   id           String    @id @default(uuid(7))
   userId       String    @map("user_id")
-  token        String    @unique
   refreshToken String    @unique @map("refresh_token")
   ipAddress    String?   @map("ip_address")
   userAgent    String?   @map("user_agent")

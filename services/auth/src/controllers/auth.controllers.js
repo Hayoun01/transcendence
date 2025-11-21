@@ -277,7 +277,7 @@ const verifyToken = async (request, reply) => {
       include: {
         Session: {
           where: {
-            token: request.headers.authorization?.substring(7),
+            id: payload.jti,
             deletedAt: null,
           },
         },

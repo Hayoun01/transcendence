@@ -71,12 +71,12 @@ export default async (fastify) => {
     }
     return sendSuccess(reply, 200, "USER_BLOCKED_SUCCESS");
   });
-  fastify.delete("/blocks/:blockedId", async (request, reply) => {
+  fastify.delete("/blocks/:targetId", async (request, reply) => {
     const userId = request.headers["x-user-id"];
-    const { blockedId } = request.params;
-    const blocked = await prisma.blockedUser.findUnique({
+    const { targetId } = request.params;
+    const blocked = await prisma.blockedUser.findFirst({
       where: {
-        id: blockedId,
+        blockedId: targetId,
         blockerId: userId,
       },
     });
@@ -84,12 +84,11 @@ export default async (fastify) => {
       return sendError(reply, 404, "NOT_FOUND");
     }
     await prisma.blockedUser.delete({
-      where: { id: blockedId },
+      where: {
+        blockerId_blockedId: { blockedId: targetId, blockerId: userId },
+      },
     });
-    const friendshipExists = await isFriendShipExists(
-      userId,
-      blocked.blockedId
-    );
+    const friendshipExists = await isFriendShipExists(userId, targetId);
     if (friendshipExists) {
       await fastify.rabbit.channel.publish(
         "user.events",
