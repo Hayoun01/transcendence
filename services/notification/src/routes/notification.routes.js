@@ -20,18 +20,21 @@ export default (fastify) => {
   fastify.get("/live", { websocket: true }, (socket, req) => {
     const { userId } = req.query;
     console.log(`${userId} connected!`);
-    socket.send("hey");
     if (!users.has(userId)) users.set(userId, new Set());
     users.get(userId).add(socket);
     socket.on("message", (message) => {
       socket.send(`Message from ${userId}: ${message}`);
     });
+    const intervalId = setInterval(() => {
+      socket.send(JSON.stringify({ ping: "pong" }));
+    }, 1000);
     socket.on("close", () => {
       const userSocket = users.get(userId);
       if (userSocket) {
         userSocket.delete(socket);
         if (userSocket.size === 0) users.delete(userId);
       }
+      clearInterval(intervalId);
       console.log(`${userId} closed connection`);
     });
   });

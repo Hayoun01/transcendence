@@ -66,11 +66,8 @@ fastify.addHook("onRequest", async (request, reply) => {
   if (publicRoutes.some((regex) => regex.regexp.test(url))) return;
   let headers = request.headers;
   if (request.url.startsWith("/ws/")) {
-    const url = new URL(request.url, `http://${request.headers.host}`);
-    const token = url.searchParams.get("token");
-    console.log("token:", token);
     headers = {
-      authorization: `Bearer ${token}`,
+      cookie: headers.cookie,
     };
   }
   const result = await fetch("http://localhost:3001/api/v1/verify", {
@@ -81,7 +78,6 @@ fastify.addHook("onRequest", async (request, reply) => {
   const response = await result.json();
   if (request.url.startsWith("/ws/")) {
     const url = new URL(request.url, `http://${request.headers.host}`);
-    url.searchParams.delete("token");
     url.searchParams.set("userId", response.userId);
     request.raw.url = url.pathname + url.search;
   } else {
