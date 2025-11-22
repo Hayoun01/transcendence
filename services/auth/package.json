@@ -19,6 +19,7 @@
     "@fastify/rate-limit": "^10.3.0",
     "@node-rs/bcrypt": "^1.10.7",
     "@prisma/client": "^6.11.1",
+    "amqplib": "^0.10.9",
     "axios": "^1.10.0",
     "bullmq": "^5.56.5",
     "dotenv": "^17.2.0",

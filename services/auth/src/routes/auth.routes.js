@@ -205,6 +205,18 @@ export default (fastify, opts, done) => {
         email: user.email,
         template: "welcome",
       });
+      await fastify.rabbit.channel.publish(
+        "user.events",
+        "user.created",
+        Buffer.from(
+          JSON.stringify({
+            userId,
+          })
+        ),
+        {
+          persistent: true,
+        }
+      );
     }
     return sendSuccess(reply, 200, "OTP verified successfully");
   });

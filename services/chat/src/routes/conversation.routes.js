@@ -161,9 +161,6 @@ export default async (fastify, opts) => {
         },
       });
     }
-    await fastify.rabbit.channel.assertExchange(exchange, "topic", {
-      durable: true,
-    });
 
     await fastify.rabbit.channel.publish(
       exchange,

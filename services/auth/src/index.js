@@ -7,6 +7,7 @@ import { redis } from "./db/redis.js";
 import { closeAll, getQueue, QueueType } from "./services/queue.services.js";
 import { randomUUID } from "crypto";
 import fastifyCookie from "@fastify/cookie";
+import rabbitmq from "./plugins/rabbitmq.js";
 
 const fastify = Fastify({
   genReqId: () => randomUUID(),
@@ -34,6 +35,8 @@ const fastify = Fastify({
     },
   },
 });
+
+fastify.register(rabbitmq);
 
 await fastify.register(fastifyCookie, {
   secret: environ.COOKIE_SECRET,

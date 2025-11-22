@@ -120,6 +120,13 @@ fastify.register(proxy, {
   rewritePrefix: "/",
 });
 
+fastify.register(proxy, {
+  wsUpstream: "ws://localhost:3004",
+  prefix: "/ws/notification",
+  rewritePrefix: "/",
+  websocket: true,
+});
+
 fastify.get("/health", (request, reply) => {
   return { message: "healthy" };
 });

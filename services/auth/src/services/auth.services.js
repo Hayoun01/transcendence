@@ -26,7 +26,7 @@ const newUserSession = async (fastify, request, userId) => {
   });
   const accessToken = fastify.jwt.sign(
     { userId, jti: session.id },
-    { expiresIn: "15m" }
+    { expiresIn: "2h" }
   );
   return { accessToken, refreshToken };
 };

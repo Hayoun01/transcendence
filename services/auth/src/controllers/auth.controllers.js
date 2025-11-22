@@ -142,7 +142,7 @@ const loginUser = (fastify) => async (request, reply) => {
     path: "/",
     secure: environ.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 15,
+    maxAge: 60 * 60 * 2,
     signed: true,
     httpOnly: true,
   });
@@ -200,7 +200,7 @@ const refreshToken = (fastify) => async (request, reply) => {
     path: "/",
     secure: environ.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 15,
+    maxAge: 60 * 60 * 2,
     signed: true,
     httpOnly: true,
   });

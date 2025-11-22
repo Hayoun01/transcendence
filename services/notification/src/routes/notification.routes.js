@@ -1,13 +1,12 @@
 import { prisma } from "../db/prisma.js";
-import { randomUUID } from "crypto";
 
 /**
  * @type {Map<string, Set<import('@fastify/websocket').WebSocket>>}
  */
-const users = new Map();
+export const users = new Map();
 
-export const broadcastToUser = (data) => {
-  const user = users.get(data.userId);
+export const broadcastToUser = (userId, data) => {
+  const user = users.get(userId);
   if (!user) return;
   for (const socket of user) {
     socket.send(JSON.stringify(data));

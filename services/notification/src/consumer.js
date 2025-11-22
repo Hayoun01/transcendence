@@ -30,26 +30,30 @@ async function consumer() {
     async (msg) => {
       if (msg) {
         try {
-          const payload = JSON.parse(msg.content.toString());
+          const parsedMsg = JSON.parse(msg.content.toString());
+          console.log(parsedMsg);
           switch (msg.fields.routingKey) {
             case "user.created":
-              console.log(msg.fields.routingKey);
-              console.log(`[>] Notification service received:`, payload);
+              const data = {
+                type: "SYSTEM",
+                title: "Welcome to transcendence",
+                content: "We're happy to have you here, play and enjoy games",
+              };
               await prisma.notification.create({
-                data: payload,
+                data: { ...data, userId: parsedMsg.userId },
               });
-              broadcastToUser(payload);
+              broadcastToUser(parsedMsg.userId, data);
               break;
             case "friendship.created":
-              console.log(payload);
-              addFriendshipToCache(payload);
+              console.log(parsedMsg);
+              addFriendshipToCache(parsedMsg);
               break;
             case "friendship.removed":
-              console.log(payload);
-              removeFriendshipFromCache(payload);
+              console.log(parsedMsg);
+              removeFriendshipFromCache(parsedMsg);
               break;
             default:
-              console.log(payload);
+              console.log(parsedMsg);
           }
         } catch (err) {
           console.error("[!] Failed to parse message content:", err);

@@ -3,6 +3,7 @@ import indexRoutes from "./routes/index.routes.js";
 import consumer from "./consumer.js";
 import { cacheFriendships } from "./utils/cache.js";
 import websocket from "@fastify/websocket";
+import { randomUUID } from "crypto";
 
 const fastify = Fastify({
   genReqId: () => randomUUID(),
