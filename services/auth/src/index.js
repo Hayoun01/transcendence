@@ -8,6 +8,7 @@ import { closeAll, getQueue, QueueType } from "./services/queue.services.js";
 import { randomUUID } from "crypto";
 import fastifyCookie from "@fastify/cookie";
 import rabbitmq from "./plugins/rabbitmq.js";
+import fastifyMetrics from "fastify-metrics";
 
 const fastify = Fastify({
   genReqId: () => randomUUID(),
@@ -34,6 +35,12 @@ const fastify = Fastify({
       }),
     },
   },
+});
+
+await fastify.register(fastifyMetrics, {
+  endpoint: "/api/v1/metrics",
+  defaultMetrics: true,
+  routeMetrics: true,
 });
 
 fastify.register(rabbitmq);

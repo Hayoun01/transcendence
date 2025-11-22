@@ -26,8 +26,13 @@ export default (fastify) => {
       socket.send(`Message from ${userId}: ${message}`);
     });
     const intervalId = setInterval(() => {
-      socket.send(JSON.stringify({ ping: "pong" }));
-    }, 1000);
+      socket.send(
+        JSON.stringify({
+          type: "ping",
+          message: `${Math.floor(Date.now() / 1000)}`,
+        })
+      );
+    }, 5000);
     socket.on("close", () => {
       const userSocket = users.get(userId);
       if (userSocket) {

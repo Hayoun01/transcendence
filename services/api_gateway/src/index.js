@@ -26,6 +26,12 @@ const fastify = Fastify({
   },
 });
 
+await fastify.register(fastifyMetrics, {
+  endpoint: "/metrics",
+  defaultMetrics: true,
+  routeMetrics: true,
+});
+
 fastify.register(fastifyCookie);
 fastify.register(helmet, {
   crossOriginResourcePolicy: { policy: "same-site" },
@@ -38,6 +44,8 @@ await fastify.register(fastifyCors, {
 });
 
 const publicRoutes = [
+  "/metrics",
+  "/api/v1/auth/metrics",
   "/api/v1/auth/login",
   "/api/v1/auth/forget-password",
   "/api/v1/auth/reset-password",
@@ -49,6 +57,7 @@ const publicRoutes = [
   "/api/v1/auth/oauth/:provider/callback",
   "/api/v1/auth/oauth/:provider",
   "/api/v1/auth/2fa/challenge",
+  "/health",
 ].map((path) => pathToRegexp(path));
 
 fastify.addHook("onRequest", async (request, reply) => {
@@ -125,11 +134,6 @@ fastify.register(proxy, {
 
 fastify.get("/health", (request, reply) => {
   return { message: "healthy" };
-});
-
-await fastify.register(fastifyMetrics, {
-  endpoint: "/api/v1/metrics",
-  defaultMetrics: true,
 });
 
 fastify.listen({ port: environ.PORT });
