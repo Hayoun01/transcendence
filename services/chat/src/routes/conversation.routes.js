@@ -36,15 +36,18 @@ export default async (fastify, opts) => {
     });
   });
 
-  fastify.get("/conversations/:id", async (request, reply) => {
+  fastify.get("/conversations/:targetUserId", async (request, reply) => {
     const userId = request.headers["x-user-id"];
-    const { id } = request.params;
-    const conversation = await prisma.conversation.findUnique({
+    const { targetUserId } = request.params;
+    const conversation = await prisma.conversation.findFirst({
       where: {
-        id,
-        members: {
-          some: { userId },
-        },
+        AND: [
+          {
+            members: { every: { userId: { in: [userId, targetUserId] } } },
+          },
+          { members: { some: { userId } } },
+          { members: { some: { userId: targetUserId } } },
+        ],
         deletedAt: null,
       },
       include: {
@@ -67,6 +70,50 @@ export default async (fastify, opts) => {
     });
     if (!conversation) return reply.status(404).send();
     return conversation;
+  });
+
+  fastify.get("/dm/:targetUserId", async (request, reply) => {
+    const userId = request.headers["x-user-id"];
+    const { targetUserId } = request.params;
+    const { page = 1, limit = 10 } = request.query;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const where = {
+      deletedAt: null,
+      conversation: {
+        AND: [
+          {
+            members: { every: { userId: { in: [userId, targetUserId] } } },
+          },
+          { members: { some: { userId } } },
+          { members: { some: { userId: targetUserId } } },
+        ],
+        deletedAt: null,
+      },
+    };
+    const total = await prisma.message.count({
+      where,
+    });
+    const messages = await prisma.message.findMany({
+      where,
+      omit: {
+        conversationId: true,
+        fileUrl: true,
+        deletedAt: true,
+      },
+      skip: (pageNum - 1) * limitNum,
+      take: limitNum,
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    return {
+      total,
+      totalPages: Math.ceil(total / limitNum),
+      page: pageNum,
+      limit: limitNum,
+      messages,
+    };
   });
 
   fastify.post("/conversations/:id", async (request, reply) => {

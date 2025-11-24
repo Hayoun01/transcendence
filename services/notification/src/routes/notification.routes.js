@@ -1,4 +1,5 @@
 import { prisma } from "../db/prisma.js";
+import { redis } from "../utils/redis.js";
 
 /**
  * @type {Map<string, Set<import('@fastify/websocket').WebSocket>>}
@@ -13,14 +14,52 @@ export const broadcastToUser = (userId, data) => {
   }
 };
 
+const notifyFriendsOfPresence = async (userId, status) => {
+  const friends = await redis.smembers(`notification:friends:${userId}`);
+  for (const friend of friends) {
+    if (!users.has(friend)) continue;
+    for (const socket of users.get(friend)) {
+      socket.send(
+        JSON.stringify({
+          type: "presence",
+          payload: {
+            userId,
+            status,
+          },
+        })
+      );
+    }
+  }
+};
+
+const notifyUserOfPresence = async (socket) => {
+  const friends = await redis.smembers(`notification:friends:${socket.userId}`);
+  const onlineFriends = friends.filter(
+    (id) => users.has(id) && users.get(id).size > 0
+  );
+  socket.send(
+    JSON.stringify({
+      type: "friends:online",
+      payload: {
+        onlineFriends,
+      },
+    })
+  );
+};
+
 /**
  * @type {import('fastify').FastifyPluginCallback}
  */
 export default (fastify) => {
   fastify.get("/live", { websocket: true }, (socket, req) => {
     const { userId } = req.query;
+    socket.userId = userId;
     console.log(`${userId} connected!`);
-    if (!users.has(userId)) users.set(userId, new Set());
+    notifyUserOfPresence(socket);
+    if (!users.has(userId)) {
+      users.set(userId, new Set());
+      notifyFriendsOfPresence(userId, "online");
+    }
     users.get(userId).add(socket);
     socket.on("message", (message) => {
       socket.send(`Message from ${userId}: ${message}`);
@@ -32,12 +71,15 @@ export default (fastify) => {
           message: `${Math.floor(Date.now() / 1000)}`,
         })
       );
-    }, 5000);
+    }, 3000);
     socket.on("close", () => {
       const userSocket = users.get(userId);
       if (userSocket) {
         userSocket.delete(socket);
-        if (userSocket.size === 0) users.delete(userId);
+        if (userSocket.size === 0) {
+          users.delete(userId);
+          notifyFriendsOfPresence(userId, "offline");
+        }
       }
       clearInterval(intervalId);
       console.log(`${userId} closed connection`);

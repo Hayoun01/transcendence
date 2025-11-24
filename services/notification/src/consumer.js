@@ -3,8 +3,42 @@ import { prisma } from "./db/prisma.js";
 import { broadcastToUser } from "./routes/notification.routes.js";
 import {
   addFriendshipToCache,
+  fetchUsernameFromCache,
   removeFriendshipFromCache,
 } from "./utils/cache.js";
+
+const FORMATTERS = async (p) => {
+  const username = await fetchUsernameFromCache(p.fromUser);
+  return {
+    FRIEND_ACCEPTED: () => ({
+      type: "FRIEND_ACCEPTED",
+      title: "A friend accepted your friend request",
+      content: `@${username} accepted your friend request.`,
+      fromUser: {
+        id: p.fromUser,
+        username,
+      },
+    }),
+    FRIEND_REQUEST: () => ({
+      type: "FRIEND_REQUEST",
+      title: "You have a new friend request",
+      content: `@${username} sent you a friend request.`,
+      fromUser: {
+        id: p.fromUser,
+        username,
+      },
+    }),
+    NEW_MESSAGE: () => ({
+      type: "NEW_MESSAGE",
+      title: "You have a new message",
+      content: `@${username} sent you a message.`,
+      fromUser: {
+        id: p.fromUser,
+        username,
+      },
+    }),
+  };
+};
 
 const exchange = "user.events";
 const queue = "notifications.queue";
@@ -31,26 +65,59 @@ async function consumer() {
       if (msg) {
         try {
           const parsedMsg = JSON.parse(msg.content.toString());
+          const formatter = await FORMATTERS(parsedMsg);
+          let formatted;
           console.log(parsedMsg);
           switch (msg.fields.routingKey) {
             case "user.created":
-              const data = {
-                type: "SYSTEM",
-                title: "Welcome to transcendence",
-                content: "We're happy to have you here, play and enjoy games",
-              };
               await prisma.notification.create({
-                data: { ...data, userId: parsedMsg.userId },
+                data: {
+                  type: "SYSTEM",
+                  title: "Welcome to transcendence",
+                  content: "We're happy to have you here, play and enjoy games",
+                  userId: parsedMsg.userId,
+                },
               });
-              broadcastToUser(parsedMsg.userId, data);
+              break;
+            case "friendship.request":
+              formatted = formatter["FRIEND_REQUEST"]();
+              await prisma.notification.create({
+                data: {
+                  type: formatted.type,
+                  title: formatted.title,
+                  content: formatted.content,
+                  userId: parsedMsg.userId,
+                },
+              });
+              broadcastToUser(parsedMsg.userId, formatted);
               break;
             case "friendship.created":
-              console.log(parsedMsg);
-              addFriendshipToCache(parsedMsg);
+              formatted = formatter["FRIEND_ACCEPTED"]();
+              await prisma.notification.create({
+                data: {
+                  type: formatted.type,
+                  title: formatted.title,
+                  content: formatted.content,
+                  userId: parsedMsg.userId,
+                },
+              });
+              broadcastToUser(parsedMsg.userId, formatted);
+              await addFriendshipToCache(parsedMsg);
               break;
             case "friendship.removed":
-              console.log(parsedMsg);
-              removeFriendshipFromCache(parsedMsg);
+              await removeFriendshipFromCache(parsedMsg);
+              break;
+            case "message.new":
+              formatted = formatter["NEW_MESSAGE"]();
+              await prisma.notification.create({
+                data: {
+                  type: formatted.type,
+                  title: formatted.title,
+                  content: formatted.content,
+                  userId: parsedMsg.userId,
+                },
+              });
+              broadcastToUser(parsedMsg.userId, formatted);
               break;
             default:
               console.log(parsedMsg);

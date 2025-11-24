@@ -37,3 +37,18 @@ export const getInternal = async (url) => {
   });
   return await res.json();
 };
+
+export const postInternal = async (url, data = {}, headers = {}) => {
+  const payload = JSON.stringify(data);
+  const signature = signPayload(payload);
+
+  return fetchRetry(url, 2000, 5, {
+    method: "POST",
+    headers: {
+      ...headers,
+      [headerName]: signature,
+      "content-type": "application/json",
+    },
+    body: payload,
+  });
+};

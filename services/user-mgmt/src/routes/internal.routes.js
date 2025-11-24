@@ -123,4 +123,19 @@ export default async (fastify) => {
     const friendships = await prisma.friendship.findMany();
     return friendships;
   });
+  fastify.get("/users/:userId", async (request, reply) => {
+    const { userId } = request.params;
+    const user = await prisma.userProfile.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        username: true,
+        createdAt: true,
+      },
+    });
+    if (!user) return reply.code(404).send({ error: "User Not Found!" });
+    return user;
+  });
 };

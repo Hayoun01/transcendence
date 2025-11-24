@@ -112,18 +112,32 @@ export default async (fastify) => {
         receiverId: targetUserId,
       },
     });
+    await fastify.rabbit.channel.publish(
+      "user.events",
+      "friendship.request",
+      Buffer.from(
+        JSON.stringify({
+          type: "FRIEND_REQUEST",
+          userId: targetUserId,
+          fromUser: userId,
+        })
+      ),
+      {
+        persistent: true,
+      }
+    );
     return sendSuccess(reply, 200, "FRD_REQ_SENT_SUCCESS");
   });
 
-  fastify.patch("/friends/:targetId/:action", async (request, reply) => {
+  fastify.patch("/friends/:targetUserId/:action", async (request, reply) => {
     const userId = request.headers["x-user-id"];
-    const { targetId, action } = request.params;
+    const { targetUserId, action } = request.params;
 
     const friendship = await prisma.friendship.findFirst({
       where: {
         OR: [
-          { receiverId: userId, requesterId: targetId },
-          { receiverId: targetId, requesterId: userId },
+          { receiverId: userId, requesterId: targetUserId },
+          { receiverId: targetUserId, requesterId: userId },
         ],
       },
     });
@@ -144,8 +158,9 @@ export default async (fastify) => {
         "friendship.created",
         Buffer.from(
           JSON.stringify({
-            requesterId: friendship.requesterId,
-            receiverId: friendship.receiverId,
+            type: "FRIEND_ACCEPTED",
+            userId: targetUserId,
+            fromUser: userId,
           })
         ),
         {
