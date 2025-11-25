@@ -117,7 +117,7 @@ export default async (fastify) => {
       "friendship.request",
       Buffer.from(
         JSON.stringify({
-          type: "FRIEND_REQUEST",
+          type: "friend:request",
           userId: targetUserId,
           fromUser: userId,
         })
@@ -158,7 +158,7 @@ export default async (fastify) => {
         "friendship.created",
         Buffer.from(
           JSON.stringify({
-            type: "FRIEND_ACCEPTED",
+            type: "friend:accepted",
             userId: targetUserId,
             fromUser: userId,
           })

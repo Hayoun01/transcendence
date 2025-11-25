@@ -123,6 +123,10 @@ export default async (fastify) => {
     const friendships = await prisma.friendship.findMany();
     return friendships;
   });
+  fastify.get("/blocks", async (request, reply) => {
+    const blocks = await prisma.blockedUser.findMany();
+    return blocks;
+  });
   fastify.get("/users/:userId", async (request, reply) => {
     const { userId } = request.params;
     const user = await prisma.userProfile.findUnique({

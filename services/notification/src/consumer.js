@@ -1,6 +1,9 @@
 import amqp from "amqplib";
 import { prisma } from "./db/prisma.js";
-import { broadcastToUser } from "./routes/notification.routes.js";
+import {
+  broadcastToUser,
+  notifyUserOfPresenceIfOnline,
+} from "./routes/notification.routes.js";
 import {
   addFriendshipToCache,
   fetchUsernameFromCache,
@@ -10,8 +13,8 @@ import {
 const FORMATTERS = async (p) => {
   const username = await fetchUsernameFromCache(p.fromUser);
   return {
-    FRIEND_ACCEPTED: () => ({
-      type: "FRIEND_ACCEPTED",
+    "friend:accepted": () => ({
+      type: "friend:accepted",
       title: "A friend accepted your friend request",
       content: `@${username} accepted your friend request.`,
       fromUser: {
@@ -19,8 +22,8 @@ const FORMATTERS = async (p) => {
         username,
       },
     }),
-    FRIEND_REQUEST: () => ({
-      type: "FRIEND_REQUEST",
+    "friend:request": () => ({
+      type: "friend:request",
       title: "You have a new friend request",
       content: `@${username} sent you a friend request.`,
       fromUser: {
@@ -28,8 +31,8 @@ const FORMATTERS = async (p) => {
         username,
       },
     }),
-    NEW_MESSAGE: () => ({
-      type: "NEW_MESSAGE",
+    "message:new": () => ({
+      type: "message:new",
       title: "You have a new message",
       content: `@${username} sent you a message.`,
       fromUser: {
@@ -80,7 +83,7 @@ async function consumer() {
               });
               break;
             case "friendship.request":
-              formatted = formatter["FRIEND_REQUEST"]();
+              formatted = formatter["friend:request"]();
               await prisma.notification.create({
                 data: {
                   type: formatted.type,
@@ -92,7 +95,7 @@ async function consumer() {
               broadcastToUser(parsedMsg.userId, formatted);
               break;
             case "friendship.created":
-              formatted = formatter["FRIEND_ACCEPTED"]();
+              formatted = formatter["friend:accepted"]();
               await prisma.notification.create({
                 data: {
                   type: formatted.type,
@@ -104,11 +107,16 @@ async function consumer() {
               broadcastToUser(parsedMsg.userId, formatted);
               await addFriendshipToCache(parsedMsg);
               break;
+            case "friendship.unblocked":
+              break;
+            case "friendship.blocked":
             case "friendship.removed":
+              console.log("removed!!!!!!!!!!!");
+              notifyUserOfPresenceIfOnline(parsedMsg);
               await removeFriendshipFromCache(parsedMsg);
               break;
             case "message.new":
-              formatted = formatter["NEW_MESSAGE"]();
+              formatted = formatter["message:new"]();
               await prisma.notification.create({
                 data: {
                   type: formatted.type,

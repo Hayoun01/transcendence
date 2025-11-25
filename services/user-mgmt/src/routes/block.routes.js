@@ -61,7 +61,7 @@ export default async (fastify) => {
     if (friendshipExists) {
       await fastify.rabbit.channel.publish(
         "user.events",
-        "friendship.removed",
+        "friendship.blocked",
         Buffer.from(
           JSON.stringify({
             requesterId: userId,
@@ -96,7 +96,7 @@ export default async (fastify) => {
     if (friendshipExists) {
       await fastify.rabbit.channel.publish(
         "user.events",
-        "friendship.created",
+        "friendship.unblocked",
         Buffer.from(
           JSON.stringify({
             requesterId: userId,

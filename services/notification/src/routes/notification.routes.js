@@ -47,6 +47,40 @@ const notifyUserOfPresence = async (socket) => {
   );
 };
 
+export const notifyUserOfPresenceIfOnline = async ({
+  requesterId: blockerId,
+  receiverId: blockedId,
+}) => {
+  if (users.has(blockedId)) {
+    const blocked = users.get(blockedId);
+    for (const socket of blocked) {
+      socket.send(
+        JSON.stringify({
+          type: "presence",
+          payload: {
+            userId: blockerId,
+            status: "offline",
+          },
+        })
+      );
+    }
+  }
+  if (users.has(blockerId)) {
+    const blocked = users.get(blockerId);
+    for (const socket of blocked) {
+      socket.send(
+        JSON.stringify({
+          type: "presence",
+          payload: {
+            userId: blockedId,
+            status: "offline",
+          },
+        })
+      );
+    }
+  }
+};
+
 /**
  * @type {import('fastify').FastifyPluginCallback}
  */
@@ -64,14 +98,14 @@ export default (fastify) => {
     socket.on("message", (message) => {
       socket.send(`Message from ${userId}: ${message}`);
     });
-    const intervalId = setInterval(() => {
-      socket.send(
-        JSON.stringify({
-          type: "ping",
-          message: `${Math.floor(Date.now() / 1000)}`,
-        })
-      );
-    }, 3000);
+    // const intervalId = setInterval(() => {
+    //   socket.send(
+    //     JSON.stringify({
+    //       type: "ping",
+    //       message: `${Math.floor(Date.now() / 1000)}`,
+    //     })
+    //   );
+    // }, 3000);
     socket.on("close", () => {
       const userSocket = users.get(userId);
       if (userSocket) {
@@ -81,7 +115,7 @@ export default (fastify) => {
           notifyFriendsOfPresence(userId, "offline");
         }
       }
-      clearInterval(intervalId);
+      // clearInterval(intervalId);
       console.log(`${userId} closed connection`);
     });
   });
