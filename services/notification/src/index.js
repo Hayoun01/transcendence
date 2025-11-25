@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import indexRoutes from "./routes/index.routes.js";
 import consumer from "./consumer.js";
-import { cacheFriendships } from "./utils/cache.js";
+import { cacheBlocks, cacheFriendships } from "./utils/cache.js";
 import websocket from "@fastify/websocket";
 import { randomUUID } from "crypto";
 
@@ -26,6 +26,9 @@ fastify.register(websocket);
 fastify.register(indexRoutes);
 fastify.addHook("onReady", () => {
   cacheFriendships().catch((error) => {
+    console.log(`Failed to warmup friendship cache: ${error}`);
+  });
+  cacheBlocks().catch((error) => {
     console.log(`Failed to warmup friendship cache: ${error}`);
   });
   consumer().catch((error) => {

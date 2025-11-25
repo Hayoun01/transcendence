@@ -58,6 +58,10 @@ export async function addFriendshipToCache({ requesterId, receiverId }) {
   await listFriendships();
 }
 
+export async function isUserFriendOf(userId, targetUserId) {
+  return await redis.sismember(`notification:friends:${targetUserId}`, userId);
+}
+
 export async function fetchUsernameFromCache(userId) {
   const key = `notification:username:${userId}`;
   const username = await redis.get(key);
@@ -70,4 +74,51 @@ export async function fetchUsernameFromCache(userId) {
     return fetchedUser.username;
   }
   return username;
+}
+
+async function listBlocks() {
+  const stream = redis.scanStream({ match: "notification:blocks:*" });
+  stream.on("data", async (keys) => {
+    for (const key of keys) {
+      console.log(key);
+      console.log(await redis.smembers(key));
+    }
+  });
+}
+
+export async function cacheBlocks() {
+  const fetchedBlocked = await getInternal(
+    `http://127.0.0.1:3002/internal/blocks`
+  );
+  const time = Date.now();
+  const jobs = [];
+  for (const blocked of fetchedBlocked) {
+    jobs.push(
+      await redis.sadd(
+        `notification:blocks:${blocked.blockerId}`,
+        blocked.blockedId
+      )
+    );
+  }
+  await Promise.all(jobs);
+  console.log(`All blocked users has been cashed! Took ${Date.now() - time}ms`);
+  await listBlocks();
+}
+
+export async function isUserBlocked(userId, targetUserId) {
+  return await redis.sismember(`notification:blocks:${targetUserId}`, userId);
+}
+
+export async function addUserToBlockSet({
+  requesterId: userId,
+  receiverId: targetUserId,
+}) {
+  return await redis.sadd(`notification:blocks:${userId}`, targetUserId);
+}
+
+export async function removeUserFromBlockSet({
+  requesterId: userId,
+  receiverId: targetUserId,
+}) {
+  return await redis.srem(`notification:blocks:${userId}`, targetUserId);
 }

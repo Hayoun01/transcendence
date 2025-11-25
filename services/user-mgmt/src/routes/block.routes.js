@@ -78,10 +78,12 @@ export default async (fastify) => {
   fastify.delete("/blocks/:targetId", async (request, reply) => {
     const userId = request.headers["x-user-id"];
     const { targetId } = request.params;
-    const blocked = await prisma.blockedUser.findFirst({
+    const blocked = await prisma.blockedUser.findUnique({
       where: {
-        blockedId: targetId,
-        blockerId: userId,
+        blockerId_blockedId: {
+          blockedId: targetId,
+          blockerId: userId,
+        },
       },
     });
     if (!blocked) {

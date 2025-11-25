@@ -1,4 +1,5 @@
 import { prisma } from "../db/prisma.js";
+import { isUserBlocked } from "../utils/cache.js";
 import { redis } from "../utils/redis.js";
 
 /**
@@ -16,9 +17,14 @@ export const broadcastToUser = (userId, data) => {
 
 const notifyFriendsOfPresence = async (userId, status) => {
   const friends = await redis.smembers(`notification:friends:${userId}`);
-  for (const friend of friends) {
-    if (!users.has(friend)) continue;
-    for (const socket of users.get(friend)) {
+  for (const friendId of friends) {
+    if (!users.has(friendId)) continue;
+    if (
+      (await isUserBlocked(userId, friendId)) ||
+      (await isUserBlocked(friendId, userId))
+    )
+      continue;
+    for (const socket of users.get(friendId)) {
       socket.send(
         JSON.stringify({
           type: "presence",
@@ -37,20 +43,28 @@ const notifyUserOfPresence = async (socket) => {
   const onlineFriends = friends.filter(
     (id) => users.has(id) && users.get(id).size > 0
   );
+  const nonBlocking = await Promise.all(
+    onlineFriends.map(async (id) => ({
+      id,
+      blocked:
+        (await isUserBlocked(socket.userId, id)) ||
+        (await isUserBlocked(id, socket.userId)),
+    }))
+  );
   socket.send(
     JSON.stringify({
       type: "friends:online",
       payload: {
-        onlineFriends,
+        onlineFriends: nonBlocking.filter((f) => !f.blocked).map((f) => f.id),
       },
     })
   );
 };
 
-export const notifyUserOfPresenceIfOnline = async ({
-  requesterId: blockerId,
-  receiverId: blockedId,
-}) => {
+export const notifyPresenceChange = async (
+  { requesterId: blockerId, receiverId: blockedId },
+  status = "offline"
+) => {
   if (users.has(blockedId)) {
     const blocked = users.get(blockedId);
     for (const socket of blocked) {
@@ -59,7 +73,7 @@ export const notifyUserOfPresenceIfOnline = async ({
           type: "presence",
           payload: {
             userId: blockerId,
-            status: "offline",
+            status,
           },
         })
       );
@@ -73,7 +87,7 @@ export const notifyUserOfPresenceIfOnline = async ({
           type: "presence",
           payload: {
             userId: blockedId,
-            status: "offline",
+            status,
           },
         })
       );

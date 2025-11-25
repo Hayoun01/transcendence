@@ -2,12 +2,15 @@ import amqp from "amqplib";
 import { prisma } from "./db/prisma.js";
 import {
   broadcastToUser,
-  notifyUserOfPresenceIfOnline,
+  notifyPresenceChange,
 } from "./routes/notification.routes.js";
 import {
   addFriendshipToCache,
+  addUserToBlockSet,
   fetchUsernameFromCache,
+  isUserFriendOf,
   removeFriendshipFromCache,
+  removeUserFromBlockSet,
 } from "./utils/cache.js";
 
 const FORMATTERS = async (p) => {
@@ -108,11 +111,17 @@ async function consumer() {
               await addFriendshipToCache(parsedMsg);
               break;
             case "friendship.unblocked":
+              removeUserFromBlockSet(parsedMsg);
+              if (isUserFriendOf(parsedMsg.requesterId, parsedMsg.receiverId))
+                notifyPresenceChange(parsedMsg, "online");
               break;
             case "friendship.blocked":
+              addUserToBlockSet(parsedMsg);
+              if (isUserFriendOf(parsedMsg.requesterId, parsedMsg.receiverId))
+                notifyPresenceChange(parsedMsg);
+              break;
             case "friendship.removed":
-              console.log("removed!!!!!!!!!!!");
-              notifyUserOfPresenceIfOnline(parsedMsg);
+              notifyPresenceChange(parsedMsg);
               await removeFriendshipFromCache(parsedMsg);
               break;
             case "message.new":
