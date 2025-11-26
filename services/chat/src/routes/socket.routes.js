@@ -48,7 +48,7 @@ const sendMessage = async (conn, targetUserId, payload) => {
     `http://localhost:3002/internal/chat/permissions/${conn.userId}/${targetUserId}`
   );
   if (!res.ok) return conn.send(JSON.stringify({ error: "Unauthorized" }));
-  await prisma.message.create({
+  const message = await prisma.message.create({
     data: {
       id: payload.msgId,
       conversationId: conversation.id,
@@ -90,6 +90,7 @@ const sendMessage = async (conn, targetUserId, payload) => {
     conn.userId,
     targetUserId
   )}`;
+  payload.createdAt = message.createdAt;
   broadcastToConversation(conn.connId, key, {
     type: "message:new",
     senderId: conn.userId,
