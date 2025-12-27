@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import proxy from "@fastify/http-proxy";
 import { randomUUID } from "crypto";
 import { sendError } from "./utils/fastify.js";
-import { environ } from "./utils/env.js";
+import { environ } from "./utils/environ.js";
 import { pathToRegexp } from "path-to-regexp";
 import fastifyCors from "@fastify/cors";
 import fastifyMetrics from "fastify-metrics";
@@ -18,7 +18,7 @@ const fastify = Fastify({
         { target: "pino-pretty", level: "info" },
         {
           target: "pino/file",
-          options: { destination: "../logs/api_gateway.log" },
+          options: { destination: `${environ.LOG_DIR}/api_gateway.log` },
           level: "info",
         },
       ],
@@ -79,7 +79,7 @@ fastify.addHook("onRequest", async (request, reply) => {
       cookie: headers.cookie,
     };
   }
-  const result = await fetch("http://localhost:3001/api/v1/verify", {
+  const result = await fetch(`${environ.AUTH_SERVICE_URL}/api/v1/verify`, {
     method: "GET",
     headers,
   });
@@ -95,38 +95,44 @@ fastify.addHook("onRequest", async (request, reply) => {
 });
 
 fastify.register(proxy, {
-  upstream: "http://localhost:3001",
+  upstream: environ.AUTH_SERVICE_URL,
   prefix: "/api/v1/auth",
   rewritePrefix: "/api/v1",
 });
 
 fastify.register(proxy, {
-  upstream: "http://localhost:3002",
+  upstream: environ.USER_MGMT_SERVICE_URL,
   prefix: "/api/v1/user-mgmt",
   rewritePrefix: "/",
 });
 
 fastify.register(proxy, {
-  upstream: "http://localhost:3003",
+  upstream: environ.CHAT_SERVICE_URL,
   prefix: "/api/v1/chat",
   rewritePrefix: "/",
 });
 
 fastify.register(proxy, {
-  wsUpstream: "ws://localhost:3003",
+  wsUpstream: environ.CHAT_SERVICE_WS_URL,
   prefix: "/ws/chat",
   rewritePrefix: "/",
   websocket: true,
 });
 
 fastify.register(proxy, {
-  upstream: "http://localhost:3004",
+  upstream: environ.NOTIFICATION_SERVICE_URL,
   prefix: "/api/v1/notification",
   rewritePrefix: "/",
 });
 
 fastify.register(proxy, {
-  wsUpstream: "ws://localhost:3004",
+  upstream: environ.TOURNAMENT_SERVICE_URL,
+  prefix: "/api/v1/tournament",
+  rewritePrefix: "/",
+});
+
+fastify.register(proxy, {
+  wsUpstream: environ.NOTIFICATION_SERVICE_WS_URL,
   prefix: "/ws/notification",
   rewritePrefix: "/",
   websocket: true,
@@ -136,4 +142,4 @@ fastify.get("/health", (request, reply) => {
   return { message: "healthy" };
 });
 
-fastify.listen({ port: environ.PORT });
+fastify.listen({ port: environ.PORT, host: "0.0.0.0" });

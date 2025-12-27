@@ -6,6 +6,7 @@ import otpServices from "../services/otp.services.js";
 import { hashPassword } from "../utils/bcrypt.js";
 import { sendError, sendSuccess } from "../utils/fastify.js";
 import { getQueue, QueueType } from "../services/queue.services.js";
+import { environ } from "../utils/environ.js";
 
 /**
  * @type {import('fastify').FastifyPluginCallback}
@@ -58,31 +59,6 @@ export default (fastify, opts, done) => {
 
   fastify.get("/verify", authControllers.verifyToken);
 
-  fastify.post("/forget-password", async (request, reply) => {
-    const { email } = request.body;
-    const user = await prisma.user.findUnique({
-      where: { email, deletedAt: null },
-    });
-    if (!user)
-      return sendSuccess(reply, 200, "PASSWORD_RESET_SENT_IF_ASSOCIATED");
-    const otp = await otpServices.createOTP(
-      prisma,
-      user.id,
-      "password_reset",
-      60
-    );
-    await getQueue(QueueType.EMAIL).add("password-reset", {
-      email: user.email,
-      template: "passwordReset",
-      context: {
-        code: otp.token,
-        link: `http://localhost:3000/reset-password?userId=${user.id}&otp=${otp.token}`,
-      },
-    });
-
-    return sendSuccess(reply, 200, "PASSWORD_RESET_SENT_IF_ASSOCIATED");
-  });
-
   fastify.post(
     "/resend-verification",
     {
@@ -111,7 +87,7 @@ export default (fastify, opts, done) => {
             userId: user.id,
             type: "email_verification",
           },
-          { expiresIn: "4m" }
+          { expiresIn: "15m" }
         );
         await prisma.outBox.create({
           data: {
@@ -224,8 +200,32 @@ export default (fastify, opts, done) => {
   // reset password using the OTP (one-time code). body: { userId, otp, password }
   const resetPasswordSchema = z.object({
     userId: z.string().min(1, "userId is required"),
-    otp: z.string().min(1, "OTP is required"),
+    token: z.string().min(1, "token is required"),
     password: z.string().min(8, "Password must be at least 8 characters"),
+  });
+
+  fastify.post("/forget-password", async (request, reply) => {
+    const { email } = request.body;
+    const user = await prisma.user.findUnique({
+      where: { email, deletedAt: null },
+    });
+    if (user) {
+      const otp = await otpServices.createOTP(
+        prisma,
+        user.id,
+        "password_reset",
+        60
+      );
+      await getQueue(QueueType.EMAIL).add("password-reset", {
+        email: user.email,
+        template: "passwordReset",
+        context: {
+          link: `${environ.CLIENT_URL}/reset-password?userId=${user.id}&otp=${otp.token}`,
+        },
+      });
+    }
+
+    return sendSuccess(reply, 200, "PASSWORD_RESET_SENT_IF_ASSOCIATED");
   });
 
   fastify.post("/reset-password", async (request, reply) => {
@@ -237,15 +237,14 @@ export default (fastify, opts, done) => {
       }));
       return sendError(reply, 400, "Bad request", { errors: errors });
     }
-    const { userId, otp, password } = request.body;
+    const { userId, token, password } = request.body;
     const { valid, reason } = await otpServices.verifyOTP(
       userId,
       "password_reset",
-      otp
+      token
     );
     if (!valid) return sendError(reply, 400, reason);
 
-    // update password and invalidate existing sessions
     await prisma.user.update({
       where: { id: userId },
       data: { passwordHashed: hashPassword(password) },
@@ -255,18 +254,14 @@ export default (fastify, opts, done) => {
       data: { deletedAt: new Date() },
     });
 
-    // optionally send a confirmation email
-    await getQueue(QueueType.EMAIL)
-      .add("password-reset-confirmation", {
-        email: (await prisma.user.findUnique({ where: { id: userId } })).email,
-        template: "passwordResetConfirmation",
-        context: {},
-      })
-      .catch(() => {});
+    await getQueue(QueueType.EMAIL).add("password-reset-confirmation", {
+      email: (await prisma.user.findUnique({ where: { id: userId } })).email,
+      template: "passwordResetConfirmation",
+      context: {},
+    });
 
     return sendSuccess(reply, 200, "PASSWORD_RESET_SUCCESS");
   });
-  // fastify.get()
 
   done();
 };

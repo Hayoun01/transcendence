@@ -1,4 +1,4 @@
-import { prisma } from "../db/prisma.js";
+import notificationControllers from "../controllers/notification.controllers.js";
 import { isUserBlocked } from "../utils/cache.js";
 import { redis } from "../utils/redis.js";
 
@@ -133,70 +133,15 @@ export default (fastify) => {
       console.log(`${userId} closed connection`);
     });
   });
-  fastify.get("/notifications", async (request, reply) => {
-    const userId = request.headers["x-user-id"];
-    console.log(userId);
-    const notifications = await prisma.notification.findMany({
-      where: {
-        userId,
-        deletedAt: null,
-      },
-      orderBy: {
-        createdAt: "asc",
-      },
-    });
-    return notifications;
-  });
-
+  fastify.get("/notifications", notificationControllers.getUserNotifications);
   fastify.patch(
     "/notifications/:notificationId/read",
-    async (request, reply) => {
-      const userId = request.headers["x-user-id"];
-      const notificationId = request.params.notificationId;
-      const notification = await prisma.notification.findUnique({
-        where: {
-          id: notificationId,
-          userId,
-          deletedAt: null,
-        },
-      });
-      // ! Change error message
-      if (!notification) return reply.send({ error: "Not found!" });
-      if (notification.readAt)
-        return reply.send({ error: "Already read this notification!" });
-      const updated = await prisma.notification.update({
-        where: { id: notification.id },
-        data: {
-          readAt: new Date(),
-        },
-      });
-      return updated;
-    }
+    notificationControllers.markNotificationAsRead
   );
-
-  fastify.post("/notifications", async (request, reply) => {
-    const data = request.body;
-    const notification = await prisma.notification.create({
-      data,
-    });
-    broadcastToUser(data);
-    return notification;
-  });
-
-  fastify.post("/notifications/read_all", async (request, reply) => {
-    const userId = request.headers["x-user-id"];
-    const notification = await prisma.notification.updateMany({
-      where: {
-        userId,
-        readAt: null,
-        deletedAt: null,
-      },
-      data: {
-        readAt: new Date(),
-      },
-    });
-    return { success: true, ...notification };
-  });
+  fastify.post(
+    "/notifications/read_all",
+    notificationControllers.readAllNotifications
+  );
 };
 
 // setInterval(() => {

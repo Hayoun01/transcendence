@@ -1,145 +1,17 @@
-import { prisma } from "../db/prisma.js";
-import { sendError, sendSuccess } from "../utils/fastify.js";
+import internalControllers from "../controllers/internal.controllers.js";
 
 /**
  * @type {import('fastify').FastifyPluginCallback}
  */
 export default async (fastify) => {
-  fastify.get("/health", (request, reply) => {
-    return { message: "healthy" };
-  });
-  fastify.post("/profiles", async (request, reply) => {
-    console.log(request.body);
-    const { userId, username } = request.body;
-    const userExists = await prisma.userProfile.findUnique({
-      where: {
-        id: userId,
-      },
-    });
-    if (userExists)
-      return sendSuccess(reply, 201, "USER_PROFILE_CREATED_SUCCESS");
-    const user = await prisma.userProfile.create({
-      data: {
-        id: userId,
-        username,
-      },
-    });
-    return sendSuccess(reply, 201, "USER_PROFILE_CREATED_SUCCESS");
-  });
-  fastify.post("/username-available", async (request, reply) => {
-    const { username } = request.body;
-    const user = await prisma.userProfile.findUnique({
-      where: {
-        username,
-      },
-    });
-    if (user) return sendError(reply, 409, "USERNAME_TAKEN");
-    return sendSuccess(reply, 200, "USERNAME_AVAILABLE");
-  });
+  fastify.post("/profiles", internalControllers.createUserProfile);
+  fastify.post("/username-available", internalControllers.isUsernameAvailable);
   fastify.post(
     "/chat/permissions/:userId/:targetUserId",
-    async (request, reply) => {
-      const { userId, targetUserId } = request.params;
-      const friendship = await prisma.friendship.findFirst({
-        where: {
-          status: "accepted",
-          OR: [
-            {
-              requesterId: userId,
-              receiverId: targetUserId,
-            },
-            {
-              requesterId: targetUserId,
-              receiverId: userId,
-            },
-          ],
-          NOT: [
-            {
-              requester: { BlockedUsers: { some: { blockedId: userId } } },
-            },
-            {
-              receiver: { BlockedUsers: { some: { blockedId: userId } } },
-            },
-            {
-              requester: { BlockedByUsers: { some: { blockerId: userId } } },
-            },
-            {
-              receiver: { BlockedByUsers: { some: { blockerId: userId } } },
-            },
-          ],
-        },
-      });
-      if (!friendship) return sendError(reply, 401, "");
-      return sendSuccess(reply, 200, "");
-    }
+    internalControllers.checkChatPermission
   );
-  fastify.post("/friends/:userId", async (request, reply) => {
-    const { userId } = request.params;
-    const res = await prisma.friendship.findMany({
-      where: {
-        status: "accepted",
-        OR: [
-          {
-            requesterId: userId,
-          },
-          {
-            receiverId: userId,
-          },
-        ],
-        NOT: [
-          {
-            requester: { BlockedUsers: { some: { blockedId: userId } } },
-          },
-          {
-            receiver: { BlockedUsers: { some: { blockedId: userId } } },
-          },
-          {
-            requester: { BlockedByUsers: { some: { blockerId: userId } } },
-          },
-          {
-            receiver: { BlockedByUsers: { some: { blockerId: userId } } },
-          },
-        ],
-      },
-      select: {
-        requester: {
-          select: {
-            id: true,
-          },
-        },
-        receiver: {
-          select: {
-            id: true,
-          },
-        },
-      },
-    });
-    return res.map((f) =>
-      f.requester.id === userId ? f.receiver.id : f.requester.id
-    );
-  });
-
-  fastify.get("/friendships", async (request, reply) => {
-    const friendships = await prisma.friendship.findMany();
-    return friendships;
-  });
-  fastify.get("/blocks", async (request, reply) => {
-    const blocks = await prisma.blockedUser.findMany();
-    return blocks;
-  });
-  fastify.get("/users/:userId", async (request, reply) => {
-    const { userId } = request.params;
-    const user = await prisma.userProfile.findUnique({
-      where: {
-        id: userId,
-      },
-      select: {
-        id: true,
-        username: true,
-        createdAt: true,
-      },
-    });
-    if (!user) return reply.code(404).send({ error: "User Not Found!" });
-    return user;
-  });
+  fastify.post("/friends/:userId", internalControllers.getFriendsOfUser);
+  fastify.get("/friendships", internalControllers.getFriendships);
+  fastify.get("/blocks", internalControllers.getBlocks);
+  fastify.get("/users/:userId", internalControllers.getUserById);
 };

@@ -5,7 +5,7 @@ import { prisma } from "../db/prisma.js";
 import { setup2FASchema } from "../schemas/twoFactor.schemas.js";
 import { sendError, sendSuccess } from "../utils/fastify.js";
 import { authService } from "../services/auth.services.js";
-import { environ } from "../utils/env.js";
+import { environ } from "../utils/environ.js";
 
 /**
  * @type {import('fastify').FastifyPluginCallback}

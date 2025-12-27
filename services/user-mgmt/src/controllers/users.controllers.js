@@ -7,6 +7,7 @@ import { prisma } from "../db/prisma.js";
 import { sendError, sendSuccess } from "../utils/fastify.js";
 import { updateUserSchema } from "../schemas/users.schemas.js";
 import errorMessages from "../schemas/errorMessages.js";
+import { get } from "http";
 
 /**
  *
@@ -200,10 +201,75 @@ const showUserAvatar = async (request, reply) => {
   }
 };
 
+/**
+ *
+ * @type {import('fastify').RouteHandlerMethod}
+ */
+const searchUsers = async (request, reply) => {
+  const { q } = request.query;
+  const currentUser = request.headers["x-user-id"];
+  if (!q) return sendError(reply, 400, "query required!");
+  const users = await prisma.userProfile.findMany({
+    where: {
+      username: {
+        contains: q,
+      },
+      id: { not: currentUser },
+      BlockedUsers: {
+        none: { blockedId: currentUser },
+      },
+    },
+  });
+  return users;
+};
+
+/**
+ *
+ * @type {import('fastify').RouteHandlerMethod}
+ */
+const getUserByUsername = async (request, reply) => {
+  const currentUser = request.headers["x-user-id"];
+  const { username } = request.params;
+
+  const user = await prisma.userProfile.findUnique({
+    where: {
+      username,
+      BlockedUsers: { none: { blockedId: currentUser } },
+    },
+    select: {
+      id: true,
+      username: true,
+      bio: true,
+    },
+  });
+  if (!user) return sendError(reply, 404, "USER_NOT_FOUND");
+  return user;
+};
+
+/**
+ *
+ * @type {import('fastify').RouteHandlerMethod}
+ */
+const getUserById = async (request, reply) => {
+  const currentUser = request.headers["x-user-id"];
+  const { userId } = request.params;
+  const user = await prisma.userProfile.findUnique({
+    where: {
+      id: userId,
+      BlockedUsers: { none: { blockedId: currentUser } },
+    },
+  });
+  if (!user) return sendError(reply, 404, "USER_NOT_FOUND");
+  return user;
+};
+
 export default {
   updateMyProfile,
   showMyProfile,
   updateMyAvatar,
   showMyAvatar,
   showUserAvatar,
+  searchUsers,
+  getUserByUsername,
+  getUserById,
 };

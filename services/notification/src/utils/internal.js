@@ -18,7 +18,7 @@ function fetchRetry(url, delay, tries, fetchOptions = {}) {
   let triesLeft;
   function onError(err) {
     triesLeft = tries - 1;
-    console.error(`Failed to fetch retrying...`);
+    console.error(`Failed to fetch ${url} retrying...`);
     if (!triesLeft) {
       throw err;
     }

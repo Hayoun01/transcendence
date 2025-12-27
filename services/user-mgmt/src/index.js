@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import indexRoute from "./routes/index.routes.js";
 import fastifyMultipart from "@fastify/multipart";
-import { environ } from "./utils/env.js";
+import { environ } from "./utils/environ.js";
 import hmacVerify from "./utils/hmac.js";
 import { randomUUID } from "crypto";
 import swagger from "@fastify/swagger";
@@ -17,7 +17,7 @@ const fastify = Fastify({
         { target: "pino-pretty", level: "info" },
         {
           target: "pino/file",
-          options: { destination: "../logs/user-mgmt.log" },
+          options: { destination: `${environ.LOG_DIR}/user-mgmt.log` },
           level: "info",
         },
       ],
@@ -36,25 +36,25 @@ const fastify = Fastify({
   },
 });
 
-await fastify.register(swagger, {
-  openapi: {
-    info: {
-      title: "My API",
-      version: "1.0.0",
-      description: "Example Fastify API with auto-generated docs",
-    },
-    components: {
-      securitySchemes: {
-        bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
-      },
-    },
-    servers: [{ url: "http://localhost:3000/api/v1/user-mgmt" }],
-  },
-});
-await fastify.register(swaggerUI, {
-  routePrefix: "/docs",
-  uiConfig: { docExpansion: "list" },
-});
+// await fastify.register(swagger, {
+//   openapi: {
+//     info: {
+//       title: "My API",
+//       version: "1.0.0",
+//       description: "Example Fastify API with auto-generated docs",
+//     },
+//     components: {
+//       securitySchemes: {
+//         bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+//       },
+//     },
+//     servers: [{ url: `${environ.CLIENT_URL}/api/v1/user-mgmt` }],
+//   },
+// });
+// await fastify.register(swaggerUI, {
+//   routePrefix: "/docs",
+//   uiConfig: { docExpansion: "list" },
+// });
 
 fastify.register(fastifyMultipart);
 fastify.register(rabbitmq);
@@ -97,7 +97,7 @@ fastify.setErrorHandler((error, req, reply) => {
 });
 
 try {
-  await fastify.listen({ port: environ.PORT });
+  await fastify.listen({ port: environ.PORT, host: "0.0.0.0" });
 } catch (err) {
   fastify.log.error(err);
   process.exit(1);

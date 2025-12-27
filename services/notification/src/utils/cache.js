@@ -1,3 +1,4 @@
+import environ from "./environ.js";
 import { getInternal } from "./internal.js";
 import { redis } from "./redis.js";
 
@@ -13,7 +14,7 @@ async function listFriendships() {
 
 export async function cacheFriendships() {
   const relationships = await getInternal(
-    "http://127.0.0.1:3002/internal/friendships"
+    `${environ.USER_MGMT_SERVICE_URL}/internal/friendships`
   );
   const time = Date.now();
 
@@ -68,7 +69,7 @@ export async function fetchUsernameFromCache(userId) {
   if (!username) {
     console.warn("Username Not Found! fetching from remote server...");
     const fetchedUser = await getInternal(
-      `http://127.0.0.1:3002/internal/users/${userId}`
+      `${environ.USER_MGMT_SERVICE_URL}/internal/users/${userId}`
     );
     await redis.setex(key, 60, fetchedUser.username);
     return fetchedUser.username;
@@ -88,7 +89,7 @@ async function listBlocks() {
 
 export async function cacheBlocks() {
   const fetchedBlocked = await getInternal(
-    `http://127.0.0.1:3002/internal/blocks`
+    `${environ.USER_MGMT_SERVICE_URL}/internal/blocks`
   );
   const time = Date.now();
   const jobs = [];

@@ -4,6 +4,7 @@ import consumer from "./consumer.js";
 import { cacheBlocks, cacheFriendships } from "./utils/cache.js";
 import websocket from "@fastify/websocket";
 import { randomUUID } from "crypto";
+import environ from "./utils/environ.js";
 
 const fastify = Fastify({
   genReqId: () => randomUUID(),
@@ -14,7 +15,7 @@ const fastify = Fastify({
         { target: "pino-pretty", level: "info" },
         {
           target: "pino/file",
-          options: { destination: "../logs/user-mgmt.log" },
+          options: { destination: `${environ.LOG_DIR}/notification.log` },
           level: "info",
         },
       ],
@@ -29,11 +30,11 @@ fastify.addHook("onReady", () => {
     console.log(`Failed to warmup friendship cache: ${error}`);
   });
   cacheBlocks().catch((error) => {
-    console.log(`Failed to warmup friendship cache: ${error}`);
+    console.log(`Failed to warmup block cache: ${error}`);
   });
   consumer().catch((error) => {
     console.log(`Failed to start rabbitmq consumer: ${error}`);
   });
 });
 
-await fastify.listen({ port: 3004 });
+fastify.listen({ port: environ.PORT, host: "0.0.0.0" });

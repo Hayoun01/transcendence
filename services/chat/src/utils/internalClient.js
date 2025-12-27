@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { environ } from "./env.js";
+import { environ } from "./environ.js";
 
 const secret = environ.INTERNAL_HMAC_SECRET;
 const headerName = "x-hmac-signature";

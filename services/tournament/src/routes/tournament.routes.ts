@@ -1,0 +1,338 @@
+import type { FastifyPluginCallback } from "fastify";
+import { prisma } from "../db/prisma";
+import z from "zod";
+
+const shuffle = (arr: any[]) => {
+  for (let i = 0; i < arr.length; i++) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+};
+
+const TournamentBodySchema = z
+  .object({
+    name: z.string(),
+    startDate: z.string(),
+    endDate: z.string(),
+    numberOfParticipants: z.number().int().positive(),
+  })
+  .superRefine((data, ctx) => {
+    const start = new Date(data.startDate);
+    const end = new Date(data.endDate);
+    if (start >= end) {
+      ctx.addIssue({
+        code: "custom",
+        message: "startDate must be before endDate",
+        path: ["startDate"],
+      });
+    }
+    const numberOfParticipants = data.numberOfParticipants;
+    if (
+      numberOfParticipants & (numberOfParticipants - 1) ||
+      numberOfParticipants === 0
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "numberOfParticipants must be a power of two",
+        path: ["numberOfParticipants"],
+      });
+    }
+    if (numberOfParticipants < 2 || numberOfParticipants > 64) {
+      ctx.addIssue({
+        code: "custom",
+        message: "numberOfParticipants must be between 2 and 64",
+        path: ["numberOfParticipants"],
+      });
+    }
+  });
+
+export default ((fastify, opts) => {
+  fastify.get("/tournaments", async (request, reply) => {
+    const tournaments = await prisma.tournament.findMany({
+      where: { deletedAt: null },
+      include: {
+        participants: {
+          where: { deletedAt: null },
+          omit: {
+            deletedAt: true,
+            tournamentId: true,
+          },
+        },
+        matches: true,
+      },
+      omit: {
+        deletedAt: true,
+      },
+    });
+    return tournaments;
+  });
+  fastify.delete("/tournaments", async (request, reply) => {
+    const tournaments = await prisma.tournament.deleteMany();
+    return tournaments;
+  });
+  fastify.delete("/tournaments/:tournamentId", async (request, reply) => {
+    const userId = request.headers["x-user-id"] as string;
+    const { tournamentId } = request.params as { tournamentId: string };
+    const deletedTournament = await prisma.tournament.findUnique({
+      where: { id: tournamentId, deletedAt: null },
+    });
+    if (!deletedTournament) {
+      reply.status(404);
+      return { success: false, error: "Tournament not found" };
+    }
+    if (deletedTournament.createdBy !== userId) {
+      reply.status(403);
+      return {
+        success: false,
+        error: "Only the tournament creator can delete the tournament",
+      };
+    }
+    if (deletedTournament.status !== "upcoming") {
+      reply.status(400);
+      return {
+        success: false,
+        error: "Cannot delete a tournament that has started or completed",
+      };
+    }
+    await prisma.$transaction(async (tx) => {
+      await tx.tournament.updateMany({
+        where: { id: tournamentId, deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+      await tx.participant.updateMany({
+        where: { tournamentId, deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+      await tx.match.updateMany({
+        where: { tournamentId, deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+    });
+    return { success: true, message: "Tournament deleted successfully" };
+  });
+  fastify.post("/new_tournament", async (request, reply) => {
+    const parseResult = TournamentBodySchema.safeParse(request.body);
+    if (!parseResult.success) {
+      reply.status(400);
+      return { errors: parseResult.error };
+    }
+    const { name, startDate, endDate, numberOfParticipants } = parseResult.data;
+    const userId = request.headers["x-user-id"] as string | undefined;
+    if (!userId) {
+      reply.status(401);
+      return;
+    }
+
+    const newTournament = await prisma.$transaction(async (tx) => {
+      const newTournament = await tx.tournament.create({
+        data: {
+          createdBy: userId,
+          name,
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
+          numberOfParticipants,
+        },
+        omit: {
+          deletedAt: true,
+        },
+      });
+      await tx.participant.create({
+        data: {
+          userId,
+          tournamentId: newTournament.id,
+        },
+      });
+      return newTournament;
+    });
+    return newTournament;
+  });
+
+  fastify.post("/join_tournament/:tournamentId", async (request, reply) => {
+    const { tournamentId } = request.params as { tournamentId: string };
+    const userId = request.headers["x-user-id"] as string | undefined;
+    if (!userId) {
+      reply.status(401);
+      return;
+    }
+    const tournament = await prisma.tournament.findFirst({
+      where: { id: tournamentId, deletedAt: null },
+      include: { participants: { where: { deletedAt: null } } },
+    });
+    if (!tournament) {
+      reply.status(404);
+      return { error: "Tournament not found" };
+    }
+    const existingParticipant = await prisma.participant.findFirst({
+      where: {
+        userId,
+        tournamentId,
+        deletedAt: null,
+      },
+    });
+    if (existingParticipant) {
+      reply.status(400);
+      return { error: "User already joined the tournament" };
+    }
+    if (tournament.participants.length >= tournament.numberOfParticipants) {
+      reply.status(400);
+      return { error: "Tournament is full" };
+    }
+    const newParticipant = await prisma.participant.create({
+      data: {
+        userId,
+        tournamentId,
+      },
+    });
+    return newParticipant;
+  });
+
+  fastify.post("/leave_tournament/:tournamentId", async (request, reply) => {
+    const { tournamentId } = request.params as { tournamentId: string };
+    const userId = request.headers["x-user-id"] as string | undefined;
+    if (!userId) {
+      reply.status(401);
+      return;
+    }
+    const participant = await prisma.participant.findFirst({
+      where: {
+        userId,
+        tournamentId,
+        deletedAt: null,
+        tournament: { deletedAt: null },
+      },
+      include: { tournament: true },
+    });
+    if (!participant) {
+      reply.status(404);
+      return { error: "Participant not found in the tournament" };
+    }
+    if (participant.tournament.createdBy === userId) {
+      reply.status(400);
+      return { error: "Tournament creator cannot leave the tournament" };
+    }
+    if (participant.tournament.status !== "upcoming") {
+      reply.status(400);
+      return {
+        error: "Cannot leave a tournament that has started or completed",
+      };
+    }
+    await prisma.participant.updateMany({
+      where: {
+        id: participant.id,
+        deletedAt: null,
+      },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+    return { message: "Successfully left the tournament" };
+  });
+
+  fastify.post("/start_tournament/:tournamentId", async (request, reply) => {
+    const { tournamentId } = request.params as { tournamentId: string };
+    const userId = request.headers["x-user-id"] as string | undefined;
+    if (!userId) {
+      reply.status(401);
+      return;
+    }
+    const tournament = await prisma.tournament.findFirst({
+      where: { id: tournamentId, deletedAt: null },
+      include: { participants: { where: { deletedAt: null } } },
+    });
+    if (!tournament) {
+      reply.status(404);
+      return { error: "Tournament not found" };
+    }
+    if (tournament.createdBy !== userId) {
+      reply.status(403);
+      return { error: "Only the tournament creator can start the tournament" };
+    }
+    if (tournament.status !== "upcoming") {
+      reply.status(400);
+      return { error: "Tournament has already started or completed" };
+    }
+    if (tournament.participants.length !== tournament.numberOfParticipants) {
+      reply.status(400);
+      return { error: "Not enough participants to start the tournament" };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.tournament.update({
+        where: { id: tournamentId },
+        data: { status: "ongoing" },
+      });
+
+      const rounds = Math.log2(tournament.numberOfParticipants);
+      for (let round = 1; round <= rounds; round++) {
+        const matchesInRound =
+          tournament.numberOfParticipants / Math.pow(2, round);
+        for (let slot = 1; slot <= matchesInRound; slot++) {
+          await tx.match.create({
+            data: {
+              tournamentId,
+              round,
+              slot,
+              status: "scheduled",
+            },
+          });
+        }
+      }
+      shuffle(tournament.participants);
+      for (let i = 0; i < tournament.participants.length; i += 2) {
+        const participant1 = tournament.participants[i] as any;
+        const participant2 = tournament.participants[i + 1] as any;
+        const match = await tx.match.findFirst({
+          where: {
+            tournamentId,
+            round: 1,
+            slot: i / 2 + 1,
+          },
+        });
+        if (match) {
+          await tx.match.update({
+            where: { id: match.id },
+            data: {
+              playerOneId: participant1.id,
+              playerTwoId: participant2.id,
+            },
+          });
+        }
+      }
+    });
+  });
+  fastify.get("/tournaments/:tournamentId/bracket", async (request, reply) => {
+    const { tournamentId } = request.params as { tournamentId: string };
+    const tournament = await prisma.tournament.findFirst({
+      where: { id: tournamentId, deletedAt: null },
+      include: {
+        matches: {
+          where: { deletedAt: null },
+          orderBy: [{ round: "asc" }, { slot: "asc" }],
+        },
+        participants: {
+          where: { deletedAt: null },
+        },
+      },
+    });
+    if (!tournament) {
+      reply.status(404);
+      return { error: "Tournament not found" };
+    }
+    const totalRounds = Math.log2(tournament.numberOfParticipants);
+    let tree = {};
+    for (let round = 1; round < totalRounds; round++) {
+      const roundMatches = tournament.matches.filter((m) => m.round === round);
+      for (let j = 0; j < roundMatches.length; j += 2) {
+        const match1 = roundMatches[j] as any;
+        const match2 = roundMatches[j + 1] as any;
+        const parentMatch = tournament.matches.find(
+          (m) => m.round === round + 1 && m.slot === Math.ceil(match1.slot / 2)
+        ) as any;
+        parentMatch.left = match1;
+        parentMatch.right = match2;
+        tree = parentMatch;
+      }
+    }
+    return tree;
+  });
+}) as FastifyPluginCallback;

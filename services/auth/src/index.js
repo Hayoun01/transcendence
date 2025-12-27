@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import indexRoute from "./routes/index.routes.js";
 import fastifyJwt from "@fastify/jwt";
-import { environ } from "./utils/env.js";
+import { environ } from "./utils/environ.js";
 import fastifyRateLimit from "@fastify/rate-limit";
 import { redis } from "./db/redis.js";
 import { closeAll, getQueue, QueueType } from "./services/queue.services.js";
@@ -19,7 +19,7 @@ const fastify = Fastify({
         { target: "pino-pretty", level: "info" },
         {
           target: "pino/file",
-          options: { destination: "../logs/auth.log" },
+          options: { destination: `${environ.LOG_DIR}/auth.log` },
           level: "info",
         },
       ],
@@ -67,9 +67,8 @@ await fastify.register(fastifyRateLimit, {
 await fastify.register(indexRoute, { prefix: "/api/v1" });
 
 fastify.addHook("onReady", async () => {
-  // getQueue(QueueType.REGISTRATION);
-  // getQueue(QueueType.NOTIFICATIONS);
-  // getQueue(QueueType.EMAIL);
+  getQueue(QueueType.REGISTRATION);
+  getQueue(QueueType.EMAIL);
 });
 
 fastify.addHook("onClose", async () => {
@@ -77,7 +76,6 @@ fastify.addHook("onClose", async () => {
 });
 
 fastify.addHook("onRequest", async (request, reply) => {
-  // * trace request
   request.headers["x-request-id"] = request.id;
   reply.header("x-request-id", request.id);
   if (request.headers["x-user-id"]) {
@@ -85,10 +83,8 @@ fastify.addHook("onRequest", async (request, reply) => {
   }
 });
 
-fastify.addHook("preHandler", async (request, reply) => {});
-
 try {
-  await fastify.listen({ port: environ.PORT });
+  await fastify.listen({ port: environ.PORT, host: "0.0.0.0" });
 } catch (err) {
   fastify.log.error(err);
   process.exit(1);

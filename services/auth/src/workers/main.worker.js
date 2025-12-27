@@ -6,6 +6,7 @@ import { prisma } from "../db/prisma.js";
 import mailer from "../utils/mailer.js";
 import { postInternal } from "../utils/internalClient.js";
 import { fileURLToPath } from "url";
+import { environ } from "../utils/environ.js";
 
 let running_worker;
 
@@ -21,12 +22,11 @@ const eventHandler = {
       email,
       template: "verifyEmail",
       context: {
-        code: otp.token,
-        link: `http://localhost:3000/api/v1/auth/otp/verify?sessionToken=${sessionToken}&otp=${otp.token}`,
+        link: `${environ.CLIENT_URL}/api/v1/auth/otp/verify?sessionToken=${sessionToken}&otp=${otp.token}`,
       },
     });
     const res = await postInternal(
-      "http://localhost:3002/internal/profiles",
+      `${environ.USER_MGMT_SERVICE_URL}/internal/profiles`,
       {
         userId,
         username,
@@ -46,8 +46,7 @@ const eventHandler = {
       email,
       template: "verifyEmail",
       context: {
-        code: otp.token,
-        link: `http://localhost:3000/api/v1/auth/otp/verify?sessionToken=${sessionToken}&otp=${otp.token}`,
+        link: `${environ.CLIENT_URL}/api/v1/auth/otp/verify?sessionToken=${sessionToken}&otp=${otp.token}`,
       },
     });
   },
@@ -70,7 +69,7 @@ const worker = () =>
           where: { id: outboxId },
           data: { status: "failed" },
         });
-        throw e;
+        console.error(e);
       }
       console.log("Job (registration) done");
     },

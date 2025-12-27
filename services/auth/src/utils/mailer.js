@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { environ } from "./env.js";
+import { environ } from "./environ.js";
 import ejs from "ejs";
 import fs from "fs";
 import path from "path";

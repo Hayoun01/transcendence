@@ -1,0 +1,132 @@
+services:
+  api_gateway:
+    build:
+      context: ./services/api_gateway
+      dockerfile: Dockerfile
+    container_name: api_gateway
+    depends_on:
+      - auth
+      - tournament
+      - user-mgmt
+      - chat
+      - notification
+    env_file:
+      - ./.env.shared
+    ports:
+      - "3000:3000"
+    networks:
+      - transcendence-network
+    volumes:
+      - logs-volume:/usr/src/logs
+  auth:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    container_name: auth
+    depends_on:
+      rabbit:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - ./.env.shared
+      - ./services/auth/.env
+    # ports:
+    #   - "3001:3001"
+    networks:
+      - transcendence-network
+    volumes:
+      - logs-volume:/usr/src/logs
+  tournament:
+    build:
+      context: ./services/tournament
+      dockerfile: Dockerfile
+    container_name: tournament
+    env_file:
+      - ./services/tournament/.env
+    networks:
+      - transcendence-network
+    volumes:
+      - logs-volume:/usr/src/logs
+  user-mgmt:
+    build:
+      context: ./services/user-mgmt
+    container_name: user-mgmt
+    depends_on:
+      rabbit:
+        condition: service_healthy
+    env_file:
+      - ./.env.shared
+      - ./services/user-mgmt/.env
+    networks:
+      - transcendence-network
+    volumes:
+      - logs-volume:/usr/src/logs
+  chat:
+    build:
+      context: ./services/chat
+    container_name: chat
+    env_file:
+      - ./.env.shared
+      - ./services/chat/.env
+    depends_on:
+      rabbit:
+        condition: service_healthy
+    networks:
+      - transcendence-network
+    volumes:
+      - logs-volume:/usr/src/logs
+  notification:
+    build:
+      context: ./services/notification
+    container_name: notification
+    depends_on:
+      rabbit:
+        condition: service_healthy
+      user-mgmt:
+        condition: service_started
+    env_file:
+      - ./.env.shared
+      - ./services/notification/.env
+    networks:
+      - transcendence-network
+    volumes:
+      - logs-volume:/usr/src/logs
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    networks:
+      - transcendence-network
+    volumes:
+      - redis-data:/data
+  rabbit:
+    image: rabbitmq:3-management
+    container_name: rabbit
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "status"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    # ports:
+      # - "5672:5672"
+      # - "15672:15672"
+    networks:
+      - transcendence-network
+    volumes:
+      - rabbit-data:/var/lib/rabbitmq
+networks:
+  transcendence-network:
+    name: transcendence-network
+    driver: bridge
+
+volumes:
+  logs-volume:
+    name: logs-volume
+    driver: local
+  redis-data:
+    name: redis-data
+    driver: local
+  rabbit-data:
+    name: rabbit-data
+    driver: local
+    

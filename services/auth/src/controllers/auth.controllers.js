@@ -13,7 +13,7 @@ import { postInternal } from "../utils/internalClient.js";
 import otpServices from "../services/otp.services.js";
 import mailer from "../utils/mailer.js";
 import { getQueue, QueueType } from "../services/queue.services.js";
-import { environ } from "../utils/env.js";
+import { environ } from "../utils/environ.js";
 
 /**
  *
@@ -33,7 +33,7 @@ const registerUser = (fastify) => async (request, reply) => {
   const [userExists, usernameAvailable] = await Promise.all([
     authService.isUserExists(email),
     postInternal(
-      "http://localhost:3002/internal/username-available",
+      `${environ.USER_MGMT_SERVICE_URL}/internal/username-available`,
       { username },
       requestToHeaders(request)
     ),
@@ -62,7 +62,7 @@ const registerUser = (fastify) => async (request, reply) => {
         userId: createdUser.id,
         type: "email_verification",
       },
-      { expiresIn: "4m" }
+      { expiresIn: "15m" }
     );
     await tx.outBox.create({
       data: {

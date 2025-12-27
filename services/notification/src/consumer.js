@@ -12,6 +12,7 @@ import {
   removeFriendshipFromCache,
   removeUserFromBlockSet,
 } from "./utils/cache.js";
+import environ from "./utils/environ.js";
 
 const FORMATTERS = async (p) => {
   const username = await fetchUsernameFromCache(p.fromUser);
@@ -50,7 +51,7 @@ const exchange = "user.events";
 const queue = "notifications.queue";
 
 async function consumer() {
-  const connection = await amqp.connect("amqp://localhost");
+  const connection = await amqp.connect(environ.RABBITMQ_URL);
   const channel = await connection.createChannel();
 
   await channel.assertExchange(exchange, "topic", { durable: true });
@@ -58,12 +59,6 @@ async function consumer() {
   await channel.bindQueue(queue, exchange, "user.*");
   await channel.bindQueue(queue, exchange, "friendship.*");
   await channel.bindQueue(queue, exchange, "message.*");
-
-  //   try {
-  //     await channel.prefetch(1);
-  //   } catch (err) {
-  //     console.warn("[!] channel.prefetch failed:", err);
-  //   }
 
   channel.consume(
     queue,
@@ -78,7 +73,7 @@ async function consumer() {
             case "user.created":
               await prisma.notification.create({
                 data: {
-                  type: "SYSTEM",
+                  type: "system",
                   title: "Welcome to transcendence",
                   content: "We're happy to have you here, play and enjoy games",
                   userId: parsedMsg.userId,

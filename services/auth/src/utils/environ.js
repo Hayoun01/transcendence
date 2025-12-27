@@ -20,5 +20,10 @@ export const environ = {
   MAIL_SENDER: process.env.MAIL_SENDER,
   REDIS_HOST: process.env.REDIS_HOST || "localhost",
   REDIS_PORT: process.env.REDIS_PORT || "6379",
+  RABBITMQ_URL: process.env.RABBITMQ_URL || "amqp://localhost",
   NODE_ENV: process.env.NODE_ENV || "production",
+  CLIENT_URL: process.env.CLIENT_URL || "http://localhost:3000",
+  USER_MGMT_SERVICE_URL: process.env.USER_MGMT_SERVICE_URL,
+  API_GATEWAY_URL: process.env.API_GATEWAY_URL || "http://localhost:3000",
+  LOG_DIR: process.env.LOG_DIR || "../logs",
 };

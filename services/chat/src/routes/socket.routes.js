@@ -1,6 +1,7 @@
 import { prisma } from "../db/prisma.js";
 import { randomUUID } from "crypto";
 import { postInternal } from "../utils/internalClient.js";
+import { environ } from "../utils/environ.js";
 
 /**
  * @type {Map<string, Set<import('@fastify/websocket').WebSocket>>}
@@ -45,7 +46,7 @@ const sendMessage = async (conn, targetUserId, payload) => {
     console.log(conversation);
   }
   const res = await postInternal(
-    `http://localhost:3002/internal/chat/permissions/${conn.userId}/${targetUserId}`
+    `${environ.USER_MGMT_SERVICE_URL}/internal/chat/permissions/${conn.userId}/${targetUserId}`
   );
   if (!res.ok) return conn.send(JSON.stringify({ error: "Unauthorized" }));
   const message = await prisma.message.create({
@@ -154,6 +155,7 @@ export default async (fastify) => {
     socket.userId = userId;
     socket.connId = randomUUID();
     socket.rabbit = fastify.rabbit;
+    socket.typing = false;
 
     if (!connections.has(userId)) connections.set(userId, new Set());
 
@@ -177,8 +179,6 @@ export default async (fastify) => {
         socket.send(JSON.stringify({ error: "Invalid JSON" }));
         return;
       }
-      console.log(data);
-      // ! check data schema/
       switch (data.type) {
         case "message:send":
           await sendMessage(socket, data.targetUserId, data.payload);
@@ -215,7 +215,14 @@ export default async (fastify) => {
           });
           socket.send(JSON.stringify({ msgId: msg.id, success: true }));
           break;
-        // case "message:typing":
+        case "message:typing":
+          ((socket, targetUserId, typing) => {
+            const key = `conversation:${min(conn.userId, targetUserId)}:${max(
+              conn.userId,
+              targetUserId
+            )}`;
+          })(socket, data.targetUserId, data.typing);
+          break;
         case "ping":
           socket.send(JSON.stringify({ type: "pong" }));
           break;
