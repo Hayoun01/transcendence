@@ -1,14 +1,15 @@
-import Fastify from "fastify";
-import indexRoute from "./routes/index.routes.js";
-import fastifyJwt from "@fastify/jwt";
-import { environ } from "./utils/environ.js";
-import fastifyRateLimit from "@fastify/rate-limit";
-import { redis } from "./db/redis.js";
-import { closeAll, getQueue, QueueType } from "./services/queue.services.js";
-import { randomUUID } from "crypto";
 import fastifyCookie from "@fastify/cookie";
-import rabbitmq from "./plugins/rabbitmq.js";
+import fastifyJwt from "@fastify/jwt";
+import fastifyRateLimit from "@fastify/rate-limit";
+import { randomUUID } from "crypto";
+import Fastify from "fastify";
 import fastifyMetrics from "fastify-metrics";
+import { redis } from "./db/redis.js";
+import rabbitmq from "./plugins/rabbitmq.js";
+import workers from "./plugins/workers.js";
+import indexRoute from "./routes/index.routes.js";
+import { closeAll, getQueue, QueueType } from "./services/queue.services.js";
+import { environ } from "./utils/environ.js";
 
 const fastify = Fastify({
   genReqId: () => randomUUID(),
@@ -44,6 +45,7 @@ await fastify.register(fastifyMetrics, {
 });
 
 fastify.register(rabbitmq);
+fastify.register(workers);
 
 await fastify.register(fastifyCookie, {
   secret: environ.COOKIE_SECRET,

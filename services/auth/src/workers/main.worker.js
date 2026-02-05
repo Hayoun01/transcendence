@@ -1,12 +1,11 @@
 import { Worker } from "bullmq";
-import { closeAll, getQueue, QueueType } from "../services/queue.services.js";
+import { fileURLToPath } from "url";
+import { prisma } from "../db/prisma.js";
 import { redis } from "../db/redis.js";
 import otpServices from "../services/otp.services.js";
-import { prisma } from "../db/prisma.js";
-import mailer from "../utils/mailer.js";
-import { postInternal } from "../utils/internalClient.js";
-import { fileURLToPath } from "url";
+import { getQueue, QueueType } from "../services/queue.services.js";
 import { environ } from "../utils/environ.js";
+import { postInternal } from "../utils/internalClient.js";
 
 let running_worker;
 
@@ -52,7 +51,7 @@ const eventHandler = {
   },
 };
 
-const worker = () =>
+const mainWorker = () =>
   new Worker(
     QueueType.REGISTRATION,
     async (job) => {
@@ -103,20 +102,18 @@ setInterval(async () => {
 }, 1000);
 
 process.on("SIGINT", async () => {
-  await running_worker.close();
-  await closeAll();
+  await running_worker?.close();
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
-  await running_worker.close();
-  await closeAll();
+  await running_worker?.close();
   process.exit(0);
 });
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   console.log("Registration worker started!");
-  running_worker = worker();
-  getQueue(QueueType.EMAIL);
-  getQueue(QueueType.REGISTRATION);
+  running_worker = mainWorker();
 }
+
+export default mainWorker;

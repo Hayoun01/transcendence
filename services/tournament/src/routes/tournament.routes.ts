@@ -1,6 +1,6 @@
 import type { FastifyPluginCallback } from "fastify";
-import { prisma } from "../db/prisma";
 import z from "zod";
+import { prisma } from "../db/prisma";
 
 const shuffle = (arr: any[]) => {
   for (let i = 0; i < arr.length; i++) {
@@ -12,20 +12,9 @@ const shuffle = (arr: any[]) => {
 const TournamentBodySchema = z
   .object({
     name: z.string(),
-    startDate: z.string(),
-    endDate: z.string(),
     numberOfParticipants: z.number().int().positive(),
   })
   .superRefine((data, ctx) => {
-    const start = new Date(data.startDate);
-    const end = new Date(data.endDate);
-    if (start >= end) {
-      ctx.addIssue({
-        code: "custom",
-        message: "startDate must be before endDate",
-        path: ["startDate"],
-      });
-    }
     const numberOfParticipants = data.numberOfParticipants;
     if (
       numberOfParticipants & (numberOfParticipants - 1) ||
@@ -116,7 +105,7 @@ export default ((fastify, opts) => {
       reply.status(400);
       return { errors: parseResult.error };
     }
-    const { name, startDate, endDate, numberOfParticipants } = parseResult.data;
+    const { name, numberOfParticipants } = parseResult.data;
     const userId = request.headers["x-user-id"] as string | undefined;
     if (!userId) {
       reply.status(401);
@@ -128,8 +117,6 @@ export default ((fastify, opts) => {
         data: {
           createdBy: userId,
           name,
-          startDate: new Date(startDate),
-          endDate: new Date(endDate),
           numberOfParticipants,
         },
         omit: {
@@ -326,7 +313,7 @@ export default ((fastify, opts) => {
         const match1 = roundMatches[j] as any;
         const match2 = roundMatches[j + 1] as any;
         const parentMatch = tournament.matches.find(
-          (m) => m.round === round + 1 && m.slot === Math.ceil(match1.slot / 2)
+          (m) => m.round === round + 1 && m.slot === Math.ceil(match1.slot / 2),
         ) as any;
         parentMatch.left = match1;
         parentMatch.right = match2;

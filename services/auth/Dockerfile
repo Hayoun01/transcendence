@@ -21,6 +21,7 @@ RUN bunx prisma generate
 FROM base AS release
 COPY --from=install /temp/prod/node_modules node_modules
 COPY --from=prerelease /usr/src/app/src ./src
+COPY --from=prerelease /usr/src/app/templates ./templates
 COPY --from=prerelease /usr/src/app/prisma ./prisma
 COPY --from=prerelease /usr/src/app/package.json .
 RUN mkdir -p /usr/src/logs && chown -R bun:bun /usr/src/app/prisma /usr/src/logs
