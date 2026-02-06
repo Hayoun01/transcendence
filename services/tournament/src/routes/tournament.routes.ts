@@ -305,6 +305,11 @@ export default ((fastify, opts) => {
       reply.status(404);
       return { error: "Tournament not found" };
     }
+    if (tournament.matches && tournament.matches.length === 1) {
+      (tournament.matches[0] as any).left = null;
+      (tournament.matches[0] as any).right = null;
+      return tournament.matches[0];
+    }
     const totalRounds = Math.log2(tournament.numberOfParticipants);
     let tree = {};
     for (let round = 1; round < totalRounds; round++) {
