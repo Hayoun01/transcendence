@@ -6,7 +6,7 @@ clean:
 	$(RM) **/*.db* **/generated
 
 setup: setup-auth setup-user-mgmt setup-chat \
-	   setup-notification
+	   setup-notification setup-tournament
 
 setup-auth:
 	@cd services/auth && bun i -D && bunx prisma migrate deploy && bunx prisma generate
@@ -19,5 +19,8 @@ setup-chat:
 
 setup-notification:
 	@cd services/notification && bun i -D && bunx prisma migrate deploy && bunx prisma generate
+
+setup-tournament:
+	@cd services/tournament && bun i -D && bunx prisma migrate deploy && bunx prisma generate
 
 .PHONY: setup setup-auth setup-user-mgmt setup-chat setup-notification
