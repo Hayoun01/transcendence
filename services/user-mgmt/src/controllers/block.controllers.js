@@ -35,7 +35,7 @@ const getBlocks = async (request, reply) => {
  *
  * @type {import('fastify').RouteHandlerMethod}
  */
-const blockUser = async (request, reply) => {
+const blockUser = (fastify) => async (request, reply) => {
   const userId = request.headers["x-user-id"];
   const { targetId } = request.params;
   if (userId === targetId)
@@ -85,7 +85,7 @@ const blockUser = async (request, reply) => {
  *
  * @type {import('fastify').RouteHandlerMethod}
  */
-const unblockUser = async (request, reply) => {
+const unblockUser = (fastify) => async (request, reply) => {
   const userId = request.headers["x-user-id"];
   const { targetId } = request.params;
   const blocked = await prisma.blockedUser.findUnique({
