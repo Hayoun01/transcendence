@@ -138,6 +138,42 @@ fastify.register(proxy, {
   websocket: true,
 });
 
+// 
+fastify.register(proxy, {
+  wsUpstream: environ.GAME_SERVICE_WS_URL,
+  prefix: "/ws/game",
+  rewritePrefix: "/",
+  websocket: true,
+});
+
+fastify.register(proxy, {
+  wsUpstream: environ.GAME_SERVICE_WS_URL,
+  prefix: "/ws/private",
+  rewritePrefix: "/",
+  websocket: true,
+});
+
+
+fastify.register(proxy, {
+  wsUpstream: environ.SKYJO_SERVICE_WS_URL,
+  prefix: "/ws/skyjo",
+  rewritePrefix: "/",
+  websocket: true,
+});
+
+fastify.register(proxy, {
+  upstream: environ.SKYJO_SERVICE_URL,
+  prefix: "/api/v1/skyjo",
+  rewritePrefix: "/api",
+});
+
+fastify.register(proxy, {
+  upstream: environ.GAME_SERVICE_URL,
+  prefix: "/api/v1/game",
+  rewritePrefix: "/api",
+});
+// 
+
 fastify.get("/health", (request, reply) => {
   return { message: "healthy" };
 });
