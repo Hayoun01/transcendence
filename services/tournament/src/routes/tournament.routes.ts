@@ -279,8 +279,8 @@ export default ((fastify, opts) => {
           await tx.match.update({
             where: { id: match.id },
             data: {
-              playerOneId: participant1.id,
-              playerTwoId: participant2.id,
+              playerOneId: participant1.userId,
+              playerTwoId: participant2.userId,
             },
           });
         }
