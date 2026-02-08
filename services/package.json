@@ -5,6 +5,9 @@
     "service:user-mgmt": "cd ./user-mgmt && bun start:dev",
     "service:chat": "cd ./chat && bun start:dev",
     "service:notification": "cd ./notification && bun start:dev",
+    "service:tournament": "cd ./tournament && bun start:dev",
+    "service:game_backend": "cd ./game_backend && npm run dev",
+    "service:skyjo_backend": "cd ./skyjo_backend && npm run dev",
     "start": "run-p service:**"
   },
   "devDependencies": {

@@ -1,6 +1,8 @@
-import Fastify from "fastify";
 import { randomUUID } from "crypto";
+import Fastify from "fastify";
+import consumer from "./plugins/consumer";
 import indexRoutes from "./routes/index.routes";
+import { environ } from "./utils/environ";
 
 const fastify = Fastify({
   genReqId: () => randomUUID(),
@@ -18,6 +20,8 @@ const fastify = Fastify({
     },
   },
 });
+
+fastify.register(consumer, { url: environ.RABBITMQ_URL });
 
 fastify.register(indexRoutes, { prefix: "/" });
 

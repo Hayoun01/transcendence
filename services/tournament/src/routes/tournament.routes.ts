@@ -1,6 +1,8 @@
+import { randomUUIDv7 } from "bun";
 import type { FastifyPluginCallback } from "fastify";
 import z from "zod";
 import { prisma } from "../db/prisma";
+import { environ } from "../utils/environ";
 
 const shuffle = (arr: any[]) => {
   for (let i = 0; i < arr.length; i++) {
@@ -98,6 +100,18 @@ export default ((fastify, opts) => {
       });
     });
     return { success: true, message: "Tournament deleted successfully" };
+  });
+  fastify.get("/test", async (request, reply) => {
+    return fetch(`${environ.GAME_SERVICE_URL!}/api/tournament/invite`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        player_one_ID: randomUUIDv7(),
+        player_two_ID: randomUUIDv7(),
+        roomId: randomUUIDv7(),
+        tournamentId: randomUUIDv7(),
+      }),
+    });
   });
   fastify.post("/new_tournament", async (request, reply) => {
     const parseResult = TournamentBodySchema.safeParse(request.body);
@@ -218,10 +232,6 @@ export default ((fastify, opts) => {
   fastify.post("/start_tournament/:tournamentId", async (request, reply) => {
     const { tournamentId } = request.params as { tournamentId: string };
     const userId = request.headers["x-user-id"] as string | undefined;
-    if (!userId) {
-      reply.status(401);
-      return;
-    }
     const tournament = await prisma.tournament.findFirst({
       where: { id: tournamentId, deletedAt: null },
       include: { participants: { where: { deletedAt: null } } },
@@ -265,6 +275,7 @@ export default ((fastify, opts) => {
         }
       }
       shuffle(tournament.participants);
+      const array = [];
       for (let i = 0; i < tournament.participants.length; i += 2) {
         const participant1 = tournament.participants[i] as any;
         const participant2 = tournament.participants[i + 1] as any;
@@ -276,6 +287,18 @@ export default ((fastify, opts) => {
           },
         });
         if (match) {
+          array.push(
+            fetch(`${environ.GAME_SERVICE_URL!}/api/tournament/invite`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                player_one_ID: participant1.userId,
+                player_two_ID: participant2.userId,
+                roomId: match.id,
+                tournamentId: tournamentId,
+              }),
+            }),
+          );
           await tx.match.update({
             where: { id: match.id },
             data: {
@@ -285,7 +308,58 @@ export default ((fastify, opts) => {
           });
         }
       }
+      await Promise.all(array);
     });
+  });
+  fastify.post("/matches/:matchId/start", async (request, reply) => {
+    const { matchId } = request.params as { matchId: string };
+    const userId = request.headers["x-user-id"] as string | undefined;
+    console.log(`userId: ${userId}`);
+    const match = await prisma.match.findUnique({
+      where: { id: matchId },
+    });
+    console.log("match: ", match);
+    if (
+      !match ||
+      (match.playerOneId !== userId && match.playerTwoId !== userId)
+    ) {
+      return {
+        success: false,
+        error: "match not found!",
+      };
+    }
+
+    const gameMatchId = await prisma.$transaction(async (tx) => {
+      const gameMatchId = match.gameMatchId || randomUUIDv7();
+      await tx.match.update({
+        where: { id: matchId },
+        data: {
+          gameMatchId,
+        },
+      });
+      const res = await fetch(
+        `${environ.GAME_SERVICE_URL!}/api/tournament/invite`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            player_one_ID: match.playerOneId,
+            player_two_ID: match.playerTwoId,
+            roomId: gameMatchId,
+            tournamentId: match.tournamentId,
+          }),
+        },
+      );
+      if (!res.ok) {
+        throw "Something went wrong!";
+      }
+      return gameMatchId;
+    });
+
+    return {
+      success: true,
+      gameMatchId,
+    };
   });
   fastify.get("/tournaments/:tournamentId/bracket", async (request, reply) => {
     const { tournamentId } = request.params as { tournamentId: string };
