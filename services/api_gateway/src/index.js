@@ -172,6 +172,12 @@ fastify.register(proxy, {
   prefix: "/api/v1/game",
   rewritePrefix: "/api",
 });
+
+fastify.register(proxy, {
+  upstream: environ.GAME_SERVICE_URL,
+  prefix: "/api/tournament",
+  rewritePrefix: "/api/tournament",
+});
 // 
 
 fastify.get("/health", (request, reply) => {
