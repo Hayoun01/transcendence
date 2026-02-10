@@ -79,6 +79,28 @@ services:
       - transcendence-network
     volumes:
       - logs-volume:/usr/src/logs
+  game_backend:
+    build:
+      context: ./services/game_backend
+    container_name: game_backend
+    depends_on:
+      rabbit:
+        condition: service_healthy
+    env_file:
+      - ./.env.shared
+    environment:
+      - NODE_ENV=production
+    networks:
+      - transcendence-network
+
+  skyjo_backend:
+    build:
+      context: ./services/skyjo_backend
+    container_name: skyjo_backend
+    environment:
+      - NODE_ENV=production
+    networks:
+      - transcendence-network
   notification:
     build:
       context: ./services/notification
