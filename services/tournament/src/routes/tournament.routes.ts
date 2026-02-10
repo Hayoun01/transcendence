@@ -275,7 +275,6 @@ export default ((fastify, opts) => {
         }
       }
       shuffle(tournament.participants);
-      const array = [];
       for (let i = 0; i < tournament.participants.length; i += 2) {
         const participant1 = tournament.participants[i] as any;
         const participant2 = tournament.participants[i + 1] as any;
@@ -287,18 +286,6 @@ export default ((fastify, opts) => {
           },
         });
         if (match) {
-          array.push(
-            fetch(`${environ.GAME_SERVICE_URL!}/api/tournament/invite`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                player_one_ID: participant1.userId,
-                player_two_ID: participant2.userId,
-                roomId: match.id,
-                tournamentId: tournamentId,
-              }),
-            }),
-          );
           await tx.match.update({
             where: { id: match.id },
             data: {
@@ -308,7 +295,6 @@ export default ((fastify, opts) => {
           });
         }
       }
-      await Promise.all(array);
     });
   });
   fastify.post("/matches/:matchId/start", async (request, reply) => {
