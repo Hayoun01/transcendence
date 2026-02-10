@@ -224,15 +224,15 @@ fastify.register(async function (fastify) {
     console.log("Private param:", privatee, "Room ID:", roomId, "Player _tow ID:", player_two_Id, "Tournament ID:", tournamentId);
     // Check if player is already in an active game
     // Check if player is already in waiting queue or has invalid playerId
-    const activeGameCheck = isPlayerInActiveGame(playerId);
-    if (!playerId || isPlayerInWaitingQueue(playerId) || activeGameCheck.inGame) {
-      connection.socket.send(JSON.stringify({
-        type: '2tap_opened',
-        message: 'Invalid player ID or already in queue or in an active game'
-      }));
-      connection.socket.close();
-      return;
-    }
+    // const activeGameCheck = isPlayerInActiveGame(playerId);
+    // if (!playerId || isPlayerInWaitingQueue(playerId) || activeGameCheck.inGame) {
+    //   connection.send(JSON.stringify({
+    //     type: '2tap_opened',
+    //     message: 'Invalid player ID or already in queue or in an active game'
+    //   }));
+    //   connection.close();
+    //   return;
+    // }
     
     console.log(`Player ${playerId} connected to default endpoint (1v1)`);
     
@@ -285,7 +285,7 @@ const setupMessageHandlers = (connection: any, playerId: string, gameMode: strin
   // Store the game mode for this player
   // playerGameModes.set(playerId, gameMode);
   
-  connection.socket.on('message', (message: { toString: () => string; }) => {
+  connection.on('message', (message: { toString: () => string; }) => {
     try {
       const data = JSON.parse(message.toString());
       
@@ -327,13 +327,13 @@ const setupMessageHandlers = (connection: any, playerId: string, gameMode: strin
     }
   });
 
-  connection.socket.on('close', () => {
+  connection.on('close', () => {
     // playerGameModes.delete(playerId);
     handlePlayerDisconnect(playerId);
   });
 
   // Send confirmation of game mode
-  connection.socket.send(JSON.stringify({
+  connection.send(JSON.stringify({
     type: 'connected',
     playerId: playerId,
     gameMode: gameMode,

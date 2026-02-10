@@ -29,14 +29,14 @@ export const  handlePlayerJoin = (connection: any, playerId: string, fastify: Fa
 //  if (waitingPlayers.some(player => player.playerId === playerId)) {
 //     console.log(`Player ${playerId} is already in the waiting list.`);
 
-//     connection.socket.send(JSON.stringify({
+//     connection.send(JSON.stringify({
 //     type: '2tap_opened',
 //     // message: 'playerId is ' + playerId,
 //     // playerId: playerId
 //     }));
 //     return;
 //   }
-  connection.socket.send(JSON.stringify({
+  connection.send(JSON.stringify({
     type: 'playerId',
     message: 'playerId is ' + playerId,
     playerId: playerId
@@ -56,11 +56,11 @@ export const  handlePlayerJoin = (connection: any, playerId: string, fastify: Fa
       
       if( tournamentIndex === -1 ) {
         console.log(`Error: Tournament match not found for player ${playerId} in room ${room_ID}`);
-        connection.socket.send(JSON.stringify({
+        connection.send(JSON.stringify({
           type: 'tournamentNotFound',
           message: 'You are not invited to this tournament match.'
         }));
-        connection.socket.close();
+        connection.close();
         return;
       }
       
@@ -70,12 +70,12 @@ export const  handlePlayerJoin = (connection: any, playerId: string, fastify: Fa
       if( !tournamentMatch.player_one_socket && !tournamentMatch.player_two_socket ) {
         // First player connecting - store socket temporarily
         if( tournamentMatch.player_one_ID === playerId ) {
-          (tournamentMatch as any).player_one_socket = connection.socket;
+          (tournamentMatch as any).player_one_socket = connection;
         } else {
-          (tournamentMatch as any).player_two_socket = connection.socket;
+          (tournamentMatch as any).player_two_socket = connection;
         }
         console.log(`First tournament player ${playerId} connected for room ${room_ID}. Waiting for opponent...`);
-        connection.socket.send(JSON.stringify({
+        connection.send(JSON.stringify({
           type: 'waitingForOpponent',
           message: 'Waiting for tournament opponent...',
           tournamentId: tournamentId,
@@ -87,11 +87,11 @@ export const  handlePlayerJoin = (connection: any, playerId: string, fastify: Fa
         
         let playerOneSocket, playerTwoSocket;
         if( tournamentMatch.player_one_ID === playerId ) {
-          playerOneSocket = connection.socket;
+          playerOneSocket = connection;
           playerTwoSocket = (tournamentMatch as any).player_two_socket;
         } else {
           playerOneSocket = (tournamentMatch as any).player_one_socket;
-          playerTwoSocket = connection.socket;
+          playerTwoSocket = connection;
         }
         
         const playerOne = { playerId: tournamentMatch.player_one_ID, socket: playerOneSocket };
@@ -118,7 +118,7 @@ export const  handlePlayerJoin = (connection: any, playerId: string, fastify: Fa
         console.log(`Error: playerinvitID is undefined for player ${playerId} joining private room ${room_ID}`);
         return;
       }
-      invitedPlayers.push({ playerId, socket: connection.socket, roomId: room_ID, player_two_ID: playerinvitID });
+      invitedPlayers.push({ playerId, socket: connection, roomId: room_ID, player_two_ID: playerinvitID });
       console.log(`Player ${playerId} added to invitedPlayers list for room ${room_ID}`);
     }
     else
@@ -130,7 +130,7 @@ export const  handlePlayerJoin = (connection: any, playerId: string, fastify: Fa
       const invitedPlayer = invitedPlayers[invitedPlayerIndex];
    
       const playerOne = { playerId: invitedPlayer.playerId , socket: invitedPlayer.socket };
-      const playerTwo = { playerId: invitedPlayer.player_two_ID , socket: connection.socket };
+      const playerTwo = { playerId: invitedPlayer.player_two_ID , socket: connection };
     
       if( playerOne && playerTwo ) {
         console.log(`Both players connected for private room ${room_ID}. Starting game...`);
@@ -157,17 +157,17 @@ export const  handlePlayerJoin = (connection: any, playerId: string, fastify: Fa
   {
     // Match with waiting player
     const waitingPlayer = waitingPlayers.shift()!;
-    createGameForTwoPlayers(waitingPlayer, { playerId, socket: connection.socket }, fastify);
+    createGameForTwoPlayers(waitingPlayer, { playerId, socket: connection }, fastify);
     // console.log(" ❗️matching players... waitingPlayers.length: ", waitingPlayers.length);
     
   } 
   else 
   {
     // Add to waiting list
-    waitingPlayers.push({ playerId, socket: connection.socket });
+    waitingPlayers.push({ playerId, socket: connection });
     
     // Notify player they're waiting
-    connection.socket.send(JSON.stringify({
+    connection.send(JSON.stringify({
       type: 'waitingForOpponent',
       message: 'Waiting for an opponent...',
       waitingPlayers: waitingPlayers.length
@@ -183,7 +183,7 @@ export const  handlePlayerJoin_3d = (connection: any, playerId: string, fastify:
   console.log(`Player ${playerId} looking for match...`);
   
 
-  connection.socket.send(JSON.stringify({
+  connection.send(JSON.stringify({
     type: 'playerId',
     message: 'playerId is ' + playerId,
     playerId: playerId
@@ -194,16 +194,16 @@ export const  handlePlayerJoin_3d = (connection: any, playerId: string, fastify:
   {
     // Match with waiting player
     const waitingPlayer = waitingPlayers3d.shift()!;
-    createGameForTwoPlayers(waitingPlayer, { playerId, socket: connection.socket }, fastify);
+    createGameForTwoPlayers(waitingPlayer, { playerId, socket: connection }, fastify);
     
   } 
   else 
   {
     // Add to waiting list
-    waitingPlayers3d.push({ playerId, socket: connection.socket });
+    waitingPlayers3d.push({ playerId, socket: connection });
     
     // Notify player they're waiting
-    connection.socket.send(JSON.stringify({
+    connection.send(JSON.stringify({
       type: 'waitingForOpponent',
       message: 'Waiting for an opponent...',
       waitingPlayers3d: waitingPlayers3d.length
@@ -376,7 +376,7 @@ export const  handlePlayerJoin_2vs2 = (connection: any, playerId: string, fastif
   console.log(`Player ${playerId} looking for match...`);
   
 
-  connection.socket.send(JSON.stringify({
+  connection.send(JSON.stringify({
     type: 'playerId',
     message: 'playerId is ' + playerId,
     playerId: playerId
@@ -395,7 +395,7 @@ export const  handlePlayerJoin_2vs2 = (connection: any, playerId: string, fastif
     console.log(" ❗️matching players... waitingPlayers2vs2.length: ", waitingPlayers2vs2.length);
     // Match with waiting player
     const waitingPlayer = waitingPlayers2vs2.shift()!;
-    createGameForFourPlayers(waitingPlayers2vs2[0], waitingPlayers2vs2[1],waitingPlayer,{ playerId, socket: connection.socket }, fastify);
+    createGameForFourPlayers(waitingPlayers2vs2[0], waitingPlayers2vs2[1],waitingPlayer,{ playerId, socket: connection }, fastify);
     //remove the players from the waiting list
     waitingPlayers2vs2.shift();
     waitingPlayers2vs2.shift();
@@ -404,10 +404,10 @@ export const  handlePlayerJoin_2vs2 = (connection: any, playerId: string, fastif
   else 
   {
     // Add to waiting list
-    waitingPlayers2vs2.push({ playerId, socket: connection.socket });
+    waitingPlayers2vs2.push({ playerId, socket: connection });
     
     // Notify player they're waiting
-    connection.socket.send(JSON.stringify({
+    connection.send(JSON.stringify({
       type: 'waitingForOpponent',
       message: 'Waiting for an opponent...',
       waitingPlayers2vs2: waitingPlayers2vs2.length
