@@ -42,6 +42,9 @@ services:
       context: ./services/tournament
       dockerfile: Dockerfile
     container_name: tournament
+    depends_on:
+      rabbit:
+        condition: service_healthy
     env_file:
       - ./services/tournament/.env
     networks:
