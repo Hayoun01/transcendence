@@ -1,5 +1,7 @@
 import { startGameLoop_3D, stopGameLoop_3D } from '../server';
 import { stopGameLoop } from './gameLogic';
+import { saveGameResult, GameResult } from './database';
+import rabbit from './rabbit';
 import { 
   GameRoom, 
   GameState, 
@@ -18,6 +20,8 @@ import {
   waitingPlayers3d,
   COUNTDOWN_TIME
 } from './types';
+
+import { fastify } from '../server';
 
 export const handlePlayerDisconnect = (playerId: string) => {
   console.log(`Player ${playerId} disconnecting...`);
@@ -61,8 +65,59 @@ export const handlePlayerDisconnect = (playerId: string) => {
   
 
     // Notify remaining player and add them back to waiting list
-    room.players.forEach(player => 
-    {
+    room.players.forEach((player) => {
+      // Logic for saving result when opponent disconnects
+      // The remaining player is the winner with a 7-0 score (or max score logic)
+      
+      const disconnectedPlayerId = playerId;
+      const remainingPlayerId = player.id;
+
+      // Identify which player slot (player1 or player2 in the array) corresponds to who
+      const remainingPlayerObj = room.gameState.players.get(remainingPlayerId);
+
+      
+      let mode = '1v1';
+      if (room.gameState.game2vs2) {
+        mode = '2v2';
+      } else if (!room.gameState.game2D) {
+        mode = '3d';
+      }
+
+      const gameResult: GameResult = {
+        gameId: room.id,
+        player1Id: remainingPlayerId,
+        player1Score: 7, // Fixed win score
+        player2Id: disconnectedPlayerId,
+        player2Score: 0,
+        winnerId: remainingPlayerId,
+        gameMode: mode,
+        duration: 0 // or calculate actual duration if tracking start time
+      };
+
+      saveGameResult(gameResult);
+
+
+
+      ///send to rabbitmq 
+
+       // Determine winner
+      const winnerId = remainingPlayerId;
+
+      if (room.tournamentId) {
+
+        
+        if (fastify.rabbit) {
+            fastify.rabbit.channel.publish('user.events', 'game.result', Buffer.from(JSON.stringify({
+                winnerId: winnerId,
+                gameMatchId: room.id,
+                tournamentId: room.tournamentId
+            })));
+            console.log(`Published game result to RabbitMQ for tournament ${room.tournamentId} with winner ${winnerId} and match ID ${room.id}`);
+        } else {
+             console.error('RabbitMQ channel not available to publish game result');
+        }
+      }
+
       player.socket.send(JSON.stringify(
       {
       type: 'opponentDisconnected',

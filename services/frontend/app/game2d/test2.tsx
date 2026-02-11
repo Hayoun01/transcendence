@@ -108,6 +108,9 @@ export default function MultiplayerPongGame_2D() {
   };
 
   const handleDisconnect = () => {
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
     setConnectionStatus('disconnected');
     setPlayerId(null);
     setOpponentId(null);

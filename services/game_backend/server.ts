@@ -25,6 +25,7 @@ import rabbit from './ts/rabbit';
 
 
 const fastify = Fastify({ logger: true });
+export { fastify };
 
 // Register plugins
 fastify.register(cors, {

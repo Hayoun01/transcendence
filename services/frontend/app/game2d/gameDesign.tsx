@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 export interface UserProfile {
   username: string;
@@ -57,6 +60,7 @@ export default function GameDesign_m({
   opponentProfile
 }: GameDesignProps) {
 
+  const router = useRouter();
   const [countdown, setCountdown] = useState<number | null>(null);
 
   useEffect(() => {
@@ -90,8 +94,23 @@ export default function GameDesign_m({
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-800 via-gray-900 to-black flex flex-col items-center justify-center p-4 font-mono">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-800 via-gray-900 to-black flex flex-col items-center justify-center p-4 font-mono relative">
       
+      {/* --- BACK BUTTON --- */}
+      <div className="absolute top-6 left-6 z-50">
+          <button 
+              onClick={() => {
+                      disconnectFromServer();
+                      router.push('/');
+                    }}
+              // href="/" 
+              className="flex items-center gap-2 px-4 py-2 border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 text-gray-300 hover:text-white rounded-lg transition-all duration-300 group"
+          >
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="font-bold text-sm tracking-wide uppercase">Home</span>
+          </button>
+      </div>
+
       {/* --- LOBBY / LOADING SCREEN --- */}
       {!openTheGame && (
         <div className="relative z-10 w-full max-w-md bg-gray-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl text-center">
@@ -251,10 +270,13 @@ export default function GameDesign_m({
                   </h2>
                   <p className="text-xl text-cyan-300 mb-8 max-w-md">{gameOver}</p>
                   <button 
-                    onClick={disconnectFromServer}
+                    onClick={() => {
+                      disconnectFromServer();
+                      router.push('/');
+                    }}
                     className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest hover:bg-cyan-400 hover:scale-105 transition-all duration-200 rounded-none transform skew-x-[-10deg]"
                   >
-                    Return to Menu
+                    Return to Home
                   </button>
                 </div>
               )}

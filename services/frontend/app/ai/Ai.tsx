@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 // --- CONSTANTS ---
 const CANVAS_WIDTH = 800;
@@ -309,8 +311,19 @@ export default function AI() {
 
     // --- RENDER ---
     return (
-        <div className="min-h-screen bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-800 via-gray-900 to-black flex flex-col items-center justify-center p-4 font-mono">
+        <div className="min-h-screen bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-800 via-gray-900 to-black flex flex-col items-center justify-center p-4 font-mono relative">
             
+            {/* --- BACK BUTTON --- */}
+            <div className="absolute top-6 left-6 z-50">
+                <Link 
+                    href="/" 
+                    className="flex items-center gap-2 px-4 py-2 border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 text-gray-300 hover:text-white rounded-lg transition-all duration-300 group"
+                >
+                    <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                    <span className="font-bold text-sm tracking-wide uppercase">Home</span>
+                </Link>
+            </div>
+
             {/* --- HEADER --- */}
             <div className="mb-6 relative group text-center">
                 <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-purple-600 rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-1000"></div>
