@@ -61,7 +61,7 @@ const defaultHistory: MatchItem[] = [
   },
 ];
 
-export default function MatcheHistory({ playerId, history = defaultHistory }: MatcheHistoryProps) {
+export default function MatcheHistory({ playerId, history }: MatcheHistoryProps) {
   const { lang } = useLang() ?? { lang: "eng" };
   const labels = useMemo(
     () =>

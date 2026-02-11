@@ -25,47 +25,7 @@ interface PlayerProgressCardProps {
   }>;
 }
 
-export default function PlayerProgressCard({
-  playerId = "019aa74f-3870-76b3-98ba-b17db19bd2b2",
-  history = [
-    {
-      id: 3,
-      game_id: "6VNCEU",
-      player1_id: "019aa74f-3870-76b3-98ba-b17db19bd2b2,019aa750-3d30-7840-ae20-c9fc59ee6cc0",
-      player1_score: 7,
-      player2_id: "019aa752-b2dc-7bd2-abc3-8b19605bfccd,019aac64-8b53-7df2-8e0a-51e88422d56e",
-      player2_score: 4,
-      winner_id: "019aa74f-3870-76b3-98ba-b17db19bd2b2,019aa750-3d30-7840-ae20-c9fc59ee6cc0",
-      game_mode: "2v2",
-      duration: 16148,
-      timestamp: "2026-02-08 09:50:00",
-    },
-    {
-      id: 2,
-      game_id: "P0GPVO",
-      player1_id: "019aa74f-3870-76b3-98ba-b17db19bd2b2",
-      player1_score: 2,
-      player2_id: "019aa750-3d30-7840-ae20-c9fc59ee6cc0",
-      player2_score: 7,
-      winner_id: "019aa750-3d30-7840-ae20-c9fc59ee6cc0",
-      game_mode: "1v1",
-      duration: 22930,
-      timestamp: "2026-02-07 13:50:48",
-    },
-    {
-      id: 1,
-      game_id: "NC78HQ",
-      player1_id: "019aa750-3d30-7840-ae20-c9fc59ee6cc0",
-      player1_score: 0,
-      player2_id: "019aa74f-3870-76b3-98ba-b17db19bd2b2",
-      player2_score: 7,
-      winner_id: "019aa74f-3870-76b3-98ba-b17db19bd2b2",
-      game_mode: "1v1",
-      duration: 15080,
-      timestamp: "2026-02-07 13:49:59",
-    },
-  ],
-}: PlayerProgressCardProps) {
+export default function PlayerProgressCard({ playerId, history }: PlayerProgressCardProps) {
   const parseIds = (value: string) =>
     value
       .split(",")
