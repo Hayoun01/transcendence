@@ -1,4 +1,19 @@
 services:
+  frontend:
+    build:
+      context: ./services/frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./services/frontend/.env
+    networks:
+      - transcendence-network
+    depends_on:
+      - game_backend
+      - skyjo_backend
+      - api_gateway
   api_gateway:
     build:
       context: ./services/api_gateway
