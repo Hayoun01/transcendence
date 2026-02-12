@@ -79,7 +79,7 @@ export default async function Dashboard( username: string, token: string | null)
         </div>
         <div className="overflow-auto flex-1 w-full border-2 border-gray-400 rounded-lg bg-gradient-to-br from-black to-gray-900 col-span-1 lg:col-span-4 row-span-3">
           <div className="p-2 h-full">
-            <ChatInterface username={username} uid={data.id} />
+            <ChatInterface username={username} currentUserId={data.id} uid={data.id} />
           </div>
         </div>
       </div>

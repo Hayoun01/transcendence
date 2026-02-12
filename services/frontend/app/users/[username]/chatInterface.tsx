@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, use } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SendHorizontal, Swords } from "lucide-react";
 import { useLang } from '@/app/context/LangContext';
 import { useRl } from '@/app/context/RlContext';
@@ -17,7 +17,6 @@ interface Message {
 
 interface ChatInterfaceProps {
     uid: string;
-    currentUserId?: string;
     socketUrl?: string;
     useDummyData?: boolean;
     username: string;
@@ -63,6 +62,7 @@ export default function ChatInterface({
     const [inputValue, setInputValue] = useState('');
     const [loading, setLoading] = useState(!useDummyData);
     const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
+    const [currentUserIdState, setCurrentUserIdState] = useState<string | undefined>(undefined);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -104,6 +104,26 @@ export default function ChatInterface({
             socket.current?.close();
         }
     }, []);
+
+    useEffect(() => {
+        const loadCurrentUserId = async () => {
+            try {
+                const response = await fetch(getGatewayUrl('/api/v1/user-mgmt/me'), {
+                    credentials: 'include',
+                });
+                if (!response.ok) throw new Error('Failed to fetch current user');
+                const data = await response.json();
+                const fetchedId = data?.id ?? data?.user?.id ?? data?.data?.id;
+                if (fetchedId) setCurrentUserIdState(fetchedId);
+            } catch (error) {
+                console.error('Error fetching current user id:', error);
+            }
+        };
+
+        if (!useDummyData) {
+            loadCurrentUserId();
+        }
+    }, [useDummyData]);
 
     // Load dummy data or fetch from API
     useEffect(() => {
@@ -203,7 +223,7 @@ export default function ChatInterface({
             setMessages(messages => [...messages, {
                 id: message.payload.id,
                 content: message.payload.content,
-                senderId: "...", // TODO add sender id
+                senderId: currentUserIdState,
                 createdAt: new Date().toISOString(),
             }]);
         }
@@ -244,7 +264,9 @@ export default function ChatInterface({
                     </div>
                 ) : (
                     messages.map((message) => {
-                        const isCurrentUser = message.senderId !== uid;
+                        const isCurrentUser = message.senderId && currentUserIdState
+                            ? message.senderId === currentUserIdState
+                            : message.senderId !== uid;
                         return (
                             <div
                                 key={message.id}
@@ -313,9 +335,20 @@ export default function ChatInterface({
                     >
                         <SendHorizontal className="w-7 h-7" />
                     </button>
-                    <button className="bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-gray-100 rounded-lg px-6 py-3 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-600">
-                        <Swords className="w-7 h-7" />
-                    </button>
+                    {currentUserIdState ? (
+                        <Link href={`/game2d?privatee=true&roomId=${(currentUserIdState < uid ? currentUserIdState + uid : uid + currentUserIdState)}&player_two_Id=${uid}`}>
+                            <button className="bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-gray-100 rounded-lg px-6 py-3 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-600">
+                                <Swords className="w-7 h-7" />
+                            </button>
+                        </Link>
+                    ) : (
+                        <button
+                            disabled
+                            className="bg-gray-800 text-gray-600 cursor-not-allowed rounded-lg px-6 py-3 font-medium"
+                        >
+                            <Swords className="w-7 h-7" />
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
