@@ -336,7 +336,7 @@ export default function ChatInterface({
                         <SendHorizontal className="w-7 h-7" />
                     </button>
                     {currentUserIdState ? (
-                        <Link href={`/game2d?privatee=true&roomId=${(currentUserIdState < uid ? currentUserIdState + uid : uid + currentUserIdState)}&player_two_Id=${uid}`}>
+                        <Link href={`/game2d?privatee=true&roomId=${(currentUserIdState < uid ? currentUserIdState + uid : uid + currentUserIdState)}&playerinvitId=${uid}`}>
                             <button className="bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-gray-100 rounded-lg px-6 py-3 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-600">
                                 <Swords className="w-7 h-7" />
                             </button>
