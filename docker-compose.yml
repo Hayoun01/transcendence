@@ -83,6 +83,7 @@ services:
     volumes:
       - logs-volume:/usr/src/logs
       - user-mgmt-db:/usr/src/app/prisma
+      - uploads-data:/usr/src/app/uploads
   chat:
     build:
       context: ./services/chat
@@ -196,5 +197,8 @@ volumes:
     driver: local
   skyjo-backend-db:
     name: skyjo-backend-db
+    driver: local
+  uploads-data:
+    name: uploads-data
     driver: local
     

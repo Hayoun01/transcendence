@@ -22,8 +22,9 @@ FROM base AS release
 COPY --from=install /temp/prod/node_modules node_modules
 COPY --from=prerelease /usr/src/app/src ./src
 COPY --from=prerelease /usr/src/app/prisma ./prisma
+COPY --from=prerelease /usr/src/app/uploads ./uploads
 COPY --from=prerelease /usr/src/app/package.json .
-RUN mkdir -p /usr/src/logs && chown -R bun:bun /usr/src/app/prisma /usr/src/logs
+RUN mkdir -p /usr/src/logs && chown -R bun:bun /usr/src/app/prisma /usr/src/logs /usr/src/app/uploads
 
 USER bun
 EXPOSE 3002/tcp

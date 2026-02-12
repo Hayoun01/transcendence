@@ -34,7 +34,7 @@ await fastify.register(fastifyMetrics, {
 
 fastify.register(fastifyCookie);
 fastify.register(helmet, {
-  crossOriginResourcePolicy: { policy: "same-site" },
+  crossOriginResourcePolicy: false,
 });
 
 await fastify.register(fastifyCors, {

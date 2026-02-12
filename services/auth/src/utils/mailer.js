@@ -1,15 +1,19 @@
-import nodemailer from "nodemailer";
-import { environ } from "./environ.js";
 import ejs from "ejs";
 import fs from "fs";
+import nodemailer from "nodemailer";
 import path from "path";
+import { environ } from "./environ.js";
 
 const transporter = nodemailer.createTransport({
   host: environ.SMTP_HOST,
   port: parseInt(environ.SMTP_PORT),
+  secure: false,
   auth: {
     user: environ.SMTP_USER,
     pass: environ.SMTP_PASS,
+  },
+  tls: {
+    rejectUnauthorized: true,
   },
 });
 
@@ -20,7 +24,7 @@ const renderTemplate = async (templateName, data) => {
     "..",
     "templates",
     "email",
-    `${templateName}.ejs`
+    `${templateName}.ejs`,
   );
   const template = fs.readFileSync(templatePath, "utf-8");
   return ejs.render(template, data);

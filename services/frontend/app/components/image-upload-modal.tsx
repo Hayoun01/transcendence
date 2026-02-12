@@ -64,10 +64,10 @@ export function ImageUploadModal({
     }
 
     // Validate file size (5Kb limit)
-    if (file.size > 5 * 1024) {
-      alert(lang === "eng" ? "File size must be less than 5Kb" : "La taille du fichier doit être inférieure à 5 Ko");
-      return;
-    }
+    // if (file.size > 5 * 1024) {
+    //   alert(lang === "eng" ? "File size must be less than 5Kb" : "La taille du fichier doit être inférieure à 5 Ko");
+    //   return;
+    // }
 
     setSelectedFile(file);
 
