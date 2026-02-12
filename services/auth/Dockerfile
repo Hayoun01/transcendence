@@ -28,4 +28,4 @@ RUN mkdir -p /usr/src/logs && chown -R bun:bun /usr/src/app/prisma /usr/src/logs
 
 USER bun
 EXPOSE 3001/tcp
-ENTRYPOINT [ "bun", "run", "src/index.js" ]
+ENTRYPOINT ["sh", "-c", "bunx prisma db push --skip-generate && bun run src/index.js"]

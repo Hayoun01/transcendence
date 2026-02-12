@@ -1,10 +1,9 @@
 import { prisma } from "../db/prisma.js";
-import { sendError, sendSuccess } from "../utils/fastify.js";
 import "../schemas/successMessages.js";
+import { sendError, sendSuccess } from "../utils/fastify.js";
 import {
-  findFriendShip,
-  isFriendShipExists,
   isBlocked,
+  isFriendShipExists
 } from "../utils/friendship.js";
 
 const friendsFilter = (userId) => ({
@@ -91,7 +90,7 @@ const getFriends = async (request, reply) => {
  *
  * @type {import('fastify').RouteHandlerMethod}
  */
-const addFriend = async (request, reply) => {
+const addFriend = (fastify) => async (request, reply) => {
   const userId = request.headers["x-user-id"];
   const { targetUserId } = request.params;
 
@@ -137,7 +136,7 @@ const addFriend = async (request, reply) => {
  *
  * @type {import('fastify').RouteHandlerMethod}
  */
-const updateFriendRequest = async (request, reply) => {
+const updateFriendRequest = (fastify) => async (request, reply) => {
   const userId = request.headers["x-user-id"];
   const { targetUserId, action } = request.params;
 

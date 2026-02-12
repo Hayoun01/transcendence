@@ -16,6 +16,7 @@ import environ from "./utils/environ.js";
 
 const FORMATTERS = async (p) => {
   const username = await fetchUsernameFromCache(p.fromUser);
+  console.log("[USERNAME]", username);
   return {
     "friend:accepted": () => ({
       type: "friend:accepted",
@@ -103,20 +104,20 @@ async function consumer() {
                 },
               });
               broadcastToUser(parsedMsg.userId, formatted);
-              await addFriendshipToCache(parsedMsg);
+              await addFriendshipToCache({receiverId: parsedMsg.userId, requesterId: parsedMsg.fromUser});
               break;
             case "friendship.unblocked":
               removeUserFromBlockSet(parsedMsg);
               if (isUserFriendOf(parsedMsg.requesterId, parsedMsg.receiverId))
-                notifyPresenceChange(parsedMsg, "online");
+                await notifyPresenceChange(parsedMsg, "online");
               break;
             case "friendship.blocked":
               addUserToBlockSet(parsedMsg);
               if (isUserFriendOf(parsedMsg.requesterId, parsedMsg.receiverId))
-                notifyPresenceChange(parsedMsg);
+                await notifyPresenceChange(parsedMsg);
               break;
             case "friendship.removed":
-              notifyPresenceChange(parsedMsg);
+              await notifyPresenceChange(parsedMsg);
               await removeFriendshipFromCache(parsedMsg);
               break;
             case "message.new":

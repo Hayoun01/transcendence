@@ -52,6 +52,7 @@ services:
       - transcendence-network
     volumes:
       - logs-volume:/usr/src/logs
+      - auth-db:/usr/src/app/prisma
   tournament:
     build:
       context: ./services/tournament
@@ -66,6 +67,7 @@ services:
       - transcendence-network
     volumes:
       - logs-volume:/usr/src/logs
+      - tournament-db:/usr/src/app/prisma
   user-mgmt:
     build:
       context: ./services/user-mgmt
@@ -80,6 +82,7 @@ services:
       - transcendence-network
     volumes:
       - logs-volume:/usr/src/logs
+      - user-mgmt-db:/usr/src/app/prisma
   chat:
     build:
       context: ./services/chat
@@ -94,6 +97,7 @@ services:
       - transcendence-network
     volumes:
       - logs-volume:/usr/src/logs
+      - chat-db:/usr/src/app/prisma
   game_backend:
     build:
       context: ./services/game_backend
@@ -170,5 +174,17 @@ volumes:
     driver: local
   rabbit-data:
     name: rabbit-data
+    driver: local
+  auth-db:
+    name: auth-db
+    driver: local
+  tournament-db:
+    name: tournament-db
+    driver: local
+  user-mgmt-db:
+    name: user-mgmt-db
+    driver: local
+  chat-db:
+    name: chat-db
     driver: local
     

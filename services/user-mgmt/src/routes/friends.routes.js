@@ -6,10 +6,10 @@ import friendsControllers from "../controllers/friends.controllers.js";
 export default async (fastify) => {
   fastify.get("/friends", friendsControllers.getFriends);
 
-  fastify.post("/friends/:targetUserId/add", friendsControllers.addFriend);
+  fastify.post("/friends/:targetUserId/add", friendsControllers.addFriend(fastify));
 
   fastify.patch(
     "/friends/:targetUserId/:action",
-    friendsControllers.updateFriendRequest
+    friendsControllers.updateFriendRequest(fastify)
   );
 };
