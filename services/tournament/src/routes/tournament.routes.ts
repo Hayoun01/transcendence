@@ -300,29 +300,42 @@ export default ((fastify, opts) => {
   fastify.post("/matches/:matchId/start", async (request, reply) => {
     const { matchId } = request.params as { matchId: string };
     const userId = request.headers["x-user-id"] as string | undefined;
-    console.log(`userId: ${userId}`);
+
     const match = await prisma.match.findUnique({
       where: { id: matchId },
     });
-    console.log("match: ", match);
-    if (
-      !match ||
-      (match.playerOneId !== userId && match.playerTwoId !== userId)
-    ) {
+
+    if (!match) {
+      reply.status(404);
+      return { success: false, error: "Match not found" };
+    }
+
+    if (match.playerOneId !== userId && match.playerTwoId !== userId) {
+      reply.status(403);
       return {
         success: false,
-        error: "match not found!",
+        error: "Unauthorized",
+      };
+    }
+
+    if (match.gameMatchId) {
+      return {
+        success: true,
+        gameMatchId: match.gameMatchId,
       };
     }
 
     const gameMatchId = await prisma.$transaction(async (tx) => {
-      const gameMatchId = match.gameMatchId || randomUUIDv7();
+      const newGameMatchId = randomUUIDv7();
+
       await tx.match.update({
         where: { id: matchId },
         data: {
-          gameMatchId,
+          gameMatchId: newGameMatchId,
+          status: "running",
         },
       });
+
       const res = await fetch(
         `${environ.GAME_SERVICE_URL!}/api/tournament/invite`,
         {
@@ -331,15 +344,17 @@ export default ((fastify, opts) => {
           body: JSON.stringify({
             player_one_ID: match.playerOneId,
             player_two_ID: match.playerTwoId,
-            roomId: gameMatchId,
+            roomId: newGameMatchId,
             tournamentId: match.tournamentId,
           }),
         },
       );
+
       if (!res.ok) {
-        throw "Something went wrong!";
+        throw new Error("Failed to create game match");
       }
-      return gameMatchId;
+
+      return newGameMatchId;
     });
 
     return {
@@ -347,6 +362,7 @@ export default ((fastify, opts) => {
       gameMatchId,
     };
   });
+
   fastify.get("/tournaments/:tournamentId/bracket", async (request, reply) => {
     const { tournamentId } = request.params as { tournamentId: string };
     const tournament = await prisma.tournament.findFirst({
