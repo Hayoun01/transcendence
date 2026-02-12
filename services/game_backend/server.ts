@@ -188,29 +188,29 @@ const isPlayerInWaitingQueue = (playerId: string): boolean => {
 };
 
 // API endpoint to check if player can join a game (call before WebSocket connection)
-fastify.get('/api/can-join/:playerId', async (req, reply) => {
-  const { playerId } = req.params as { playerId: string };
+// fastify.get('/api/can-join/:playerId', async (req, reply) => {
+//   const { playerId } = req.params as { playerId: string };
   
-  const activeGameCheck = isPlayerInActiveGame(playerId);
-  if (activeGameCheck.inGame) {
-    return { 
-      canJoin: false, 
-      reason: 'already_in_game', 
-      message: 'Player is already in an active game',
-      roomId: activeGameCheck.roomId 
-    };
-  }
+//   const activeGameCheck = isPlayerInActiveGame(playerId);
+//   if (activeGameCheck.inGame) {
+//     return { 
+//       canJoin: false, 
+//       reason: 'already_in_game', 
+//       message: 'Player is already in an active game',
+//       roomId: activeGameCheck.roomId 
+//     };
+//   }
   
-  if (isPlayerInWaitingQueue(playerId)) {
-    return { 
-      canJoin: false, 
-      reason: 'already_waiting', 
-      message: 'Player is already in the waiting queue' 
-    };
-  }
+//   if (isPlayerInWaitingQueue(playerId)) {
+//     return { 
+//       canJoin: false, 
+//       reason: 'already_waiting', 
+//       message: 'Player is already in the waiting queue' 
+//     };
+//   }
   
-  return { canJoin: true };
-});
+//   return { canJoin: true };
+// });
 //////////////////////////////////////////////////////////////////////////////////////
 // URL-based game mode selection approach
 fastify.register(async function (fastify) {
@@ -223,17 +223,17 @@ fastify.register(async function (fastify) {
     const { privatee, roomId, player_two_Id, tournamentId } = req.query as { privatee: string; roomId: string ; player_two_Id:string; tournamentId:string};
     
     console.log("Private param:", privatee, "Room ID:", roomId, "Player _tow ID:", player_two_Id, "Tournament ID:", tournamentId);
-    // Check if player is already in an active game
-    // Check if player is already in waiting queue or has invalid playerId
-    // const activeGameCheck = isPlayerInActiveGame(playerId);
-    // if (!playerId || isPlayerInWaitingQueue(playerId) || activeGameCheck.inGame) {
-    //   connection.send(JSON.stringify({
-    //     type: '2tap_opened',
-    //     message: 'Invalid player ID or already in queue or in an active game'
-    //   }));
-    //   connection.close();
-    //   return;
-    // }
+    
+    // Check if player is already in an active game or waiting queue
+    const activeGameCheck = isPlayerInActiveGame(playerId);
+    if (!playerId || isPlayerInWaitingQueue(playerId) || activeGameCheck.inGame) {
+      connection.send(JSON.stringify({
+        type: 'error',
+        message: 'You are already in a game or waiting in queue. Please close other game tabs.'
+      }));
+      connection.close();
+      return;
+    }
     
     console.log(`Player ${playerId} connected to default endpoint (1v1)`);
     
@@ -260,8 +260,19 @@ fastify.register(async function (fastify) {
   // });
   // 1v1 3D specific endpoint
   fastify.get('/ws/3d', { websocket: true }, (connection, req) => {
-    // const playerId = Math.random().toString(36).substring(7);
     const {userId: playerId} = req.query as QueryGM;
+    
+    // Check if player is already in an active game or waiting queue
+    const activeGameCheck = isPlayerInActiveGame(playerId);
+    if (!playerId || isPlayerInWaitingQueue(playerId) || activeGameCheck.inGame) {
+      connection.send(JSON.stringify({
+        type: 'error',
+        message: 'You are already in a game or waiting in queue. Please close other game tabs.'
+      }));
+      connection.close();
+      return;
+    }
+    
     console.log(`Player ${playerId} connected to 3d mode`);
     
     handlePlayerJoin_3d(connection, playerId, fastify);
@@ -272,7 +283,18 @@ fastify.register(async function (fastify) {
   // 2v2 specific endpoint
   fastify.get('/ws/2v2', { websocket: true }, (connection, req) => {
     const {userId: playerId} = req.query as QueryGM;
-    // const playerId = Math.random().toString(36).substring(7);
+    
+    // Check if player is already in an active game or waiting queue
+    const activeGameCheck = isPlayerInActiveGame(playerId);
+    if (!playerId || isPlayerInWaitingQueue(playerId) || activeGameCheck.inGame) {
+      connection.send(JSON.stringify({
+        type: 'error',
+        message: 'You are already in a game or waiting in queue. Please close other game tabs.'
+      }));
+      connection.close();
+      return;
+    }
+    
     console.log(`Player ${playerId} connected to 2v2 mode`);
     
     handlePlayerJoin_2vs2(connection, playerId, fastify);
