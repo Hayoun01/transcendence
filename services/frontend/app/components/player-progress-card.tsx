@@ -77,16 +77,18 @@ export default function PlayerProgressCard({ playerId, history }: PlayerProgress
     };
   });
 
+  const { lang } = useLang()!;
   if (progressData.length === 0) {
     return (
       <Card className="w-full h-full bg-transparent border-none text-white">
         <CardContent className="pt-6 flex flex-col justify-center h-full text-center">
-          <div>No progress data available.</div>
+          <div>
+            {lang === "fr" ? "Aucune donnée de progression disponible." : "No progress data available."}
+          </div>
         </CardContent>
       </Card>
     );
   }
-  const { lang } = useLang()!;
   return (
     <Card className="w-full bg-transparent border-none text-white">
       <CardContent className="pt-6 flex flex-col justify-center h-full text-center">

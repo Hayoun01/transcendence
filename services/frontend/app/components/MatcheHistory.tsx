@@ -171,7 +171,7 @@ export default function MatcheHistory({ playerId, history }: MatcheHistoryProps)
   if (sortedHistory.length === 0) {
     return (
       <div className="flex h-full w-full items-center justify-center p-4 text-white">
-        No matches yet.
+        {lang === "fr" ? "Aucun match pour l'instant." : "No matches yet."}
       </div>
     );
   }
