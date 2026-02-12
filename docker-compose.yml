@@ -165,9 +165,64 @@ services:
       - transcendence-network
     volumes:
       - rabbit-data:/var/lib/rabbitmq
+  prometheus:
+    depends_on:
+      - cadvisor
+      - node_exporter
+    restart: unless-stopped 
+    container_name: prometheus
+    build: ./services/prometheus/.
+    networks:
+      - monitoring-network
+    volumes:
+      - prometheus-data:/prometheus
+    ports:
+     - "9090:9090"
+  grafana:
+    depends_on:
+      - prometheus
+    restart: unless-stopped 
+    container_name: grafana
+    build: 
+      context: ./services/grafana/.
+      secrets:
+        - admin_password
+    networks:
+      - monitoring-network
+    ports:
+      - "6969:6969"
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    networks:
+      - monitoring-network
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    volumes:
+      - "/:/rootfs:ro"
+      - "/var/run:/var/run:ro"
+      - "/sys:/sys:ro"
+      - "/var/lib/docker/:/var/lib/docker:ro"
+      - "/dev/disk/:/dev/disk:ro"
+    devices:
+      - "/dev/kmsg:/dev/kmsg"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+
 networks:
   transcendence-network:
     name: transcendence-network
+    driver: bridge
+  monitoring-network:
+    name: monitoring-network
     driver: bridge
 
 volumes:
@@ -201,4 +256,9 @@ volumes:
   uploads-data:
     name: uploads-data
     driver: local
-    
+  prometheus-data:
+    driver: local
+
+secrets:
+  admin_password:
+    file: ./secrets/admin_password
