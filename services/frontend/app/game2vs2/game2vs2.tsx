@@ -1,6 +1,9 @@
 'use client';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { getGatewayUrl, getWsGatewayUrl } from "@/lib/gateway";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react"; 
+import { useRouter } from 'next/navigation';
 
 export interface UserProfile {
   username: string;
@@ -40,6 +43,7 @@ const BALL_SIZE = 15;
 const COUNTDOWN_TIME = 5;
 
 export default function Game2vs2() {
+  const router = useRouter();
   const wsRef = useRef<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [playerId, setPlayerId] = useState<string | null>(null);
@@ -351,8 +355,22 @@ export default function Game2vs2() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-800 via-gray-900 to-black flex flex-col items-center justify-center p-4 font-mono">
+    <div className="relative min-h-screen bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-800 via-gray-900 to-black flex flex-col items-center justify-center p-4 font-mono">
       
+      {/* Back to Home Button */}
+      <div className="absolute top-6 left-6 z-50">
+          <button 
+              onClick={() => {
+                      disconnectFromServer();
+                      router.push('/');
+                    }}
+              className="flex items-center gap-2 px-4 py-2 border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 text-gray-300 hover:text-white rounded-lg transition-all duration-300 group"
+          >
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="font-bold text-sm tracking-wide uppercase">Home</span>
+          </button>
+      </div>
+
       {/* --- LOBBY SCREEN --- */}
       {!openTheGame && (
         <div className="relative z-10 w-full max-w-md bg-gray-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl text-center">

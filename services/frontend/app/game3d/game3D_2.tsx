@@ -1,8 +1,9 @@
 "use client";
 import * as BABYLON from 'babylonjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import 'babylonjs-loaders';
-import { GamepadIcon, Trophy, User, Users, Wifi, WifiOff } from 'lucide-react';
+import { GamepadIcon, Trophy, User, Users, Wifi, WifiOff, ArrowLeft } from 'lucide-react';
 import { getWsGatewayUrl } from "@/lib/gateway";
 const COUNTDOWN_TIME =5; // 5 seconds countdown
 export default function Game3D() {
@@ -639,8 +640,22 @@ export default function Game3D() {
     return (
         <div className="w-full h-screen relative">
             
+            {/* --- BACK BUTTON --- */}
+            <div className="absolute top-6 left-1/2 transform -translate-x-1/2 -ml-20 z-50">
+            </div>
             
-            <canvas 
+            <div className="absolute top-6 left-6 z-50">
+                <Link 
+                    href="/" 
+                    onClick={() => disconnectFromServer()}
+                    className="flex items-center gap-2 px-4 py-2 border border-white/10 bg-black/60 backdrop-blur-sm hover:bg-white/10 text-gray-300 hover:text-white rounded-lg transition-all duration-300 group"
+                >
+                    <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                    <span className="font-bold text-sm tracking-wide uppercase">Home</span>
+                </Link>
+            </div>
+            
+        <canvas 
                 ref={canvasRef} 
                 className='w-full h-full outline-none'
                 tabIndex={0}
@@ -727,7 +742,7 @@ export default function Game3D() {
             {/* )} */}
 
 
-<div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white p-4 rounded-xl backdrop-blur-sm min-w-48">
+<div className="absolute top-4 right-4 bg-black bg-opacity-70 text-white p-4 rounded-xl backdrop-blur-sm min-w-48">
         <div className="space-y-2 text-sm">
           <div className="flex items-center space-x-2">
             {connectionStatus ==="disconnected" ? (

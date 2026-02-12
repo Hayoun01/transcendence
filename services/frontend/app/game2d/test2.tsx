@@ -175,6 +175,13 @@ export default function MultiplayerPongGame_2D() {
         setGameRunning(false);
         break;
 
+      case 'invitationExpired':
+        setGameOver(data.message);
+        setIsLoading(false);
+        setGameRunning(false);
+        if (wsRef.current) wsRef.current.close();
+        break;
+
       case 'gameStarted':
         setMessage(null); // Clear loading message
         setGameRunning(true);

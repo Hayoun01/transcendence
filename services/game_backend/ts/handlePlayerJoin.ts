@@ -120,6 +120,22 @@ export const  handlePlayerJoin = (connection: any, playerId: string, fastify: Fa
       }
       invitedPlayers.push({ playerId, socket: connection, roomId: room_ID, player_two_ID: playerinvitID });
       console.log(`Player ${playerId} added to invitedPlayers list for room ${room_ID}`);
+
+      // Remove invitation after 1 minute if opponent hasn't joined
+      setTimeout(() => {
+        const index = invitedPlayers.findIndex(p => p.roomId === room_ID && p.playerId === playerId);
+        if (index !== -1) {
+          console.log(`Invitation for room ${room_ID} expired. Removing player ${playerId}.`);
+          invitedPlayers.splice(index, 1);
+          // Optional: Notify the player that the invitation expired
+          if (connection.readyState === 1) { // 1 = OPEN
+             connection.send(JSON.stringify({
+               type: 'invitationExpired',
+               message: 'The invitation has expired.'
+             }));
+          }
+        }
+      }, 60000); // 1 minute timeout
     }
     else
     {
