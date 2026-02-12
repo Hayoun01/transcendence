@@ -111,6 +111,8 @@ services:
       - NODE_ENV=production
     networks:
       - transcendence-network
+    volumes:
+      - game-backend-db:/app
 
   skyjo_backend:
     build:
@@ -120,6 +122,8 @@ services:
       - NODE_ENV=production
     networks:
       - transcendence-network
+    volumes:
+      - skyjo-backend-db:/app
   notification:
     build:
       context: ./services/notification
@@ -186,5 +190,11 @@ volumes:
     driver: local
   chat-db:
     name: chat-db
+    driver: local
+  game-backend-db:
+    name: game-backend-db
+    driver: local
+  skyjo-backend-db:
+    name: skyjo-backend-db
     driver: local
     
