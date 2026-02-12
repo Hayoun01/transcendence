@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useLang } from "../context/LangContext";
 import { getGatewayUrl } from "@/lib/gateway";
 
@@ -71,6 +72,7 @@ export default function MatcheHistory({ playerId, history }: MatcheHistoryProps)
     [lang]
   );
   const [currentUserId, setCurrentUserId] = useState<string | null>(playerId ?? null);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [opponentNames, setOpponentNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +93,6 @@ export default function MatcheHistory({ playerId, history }: MatcheHistoryProps)
     const loadCurrentUser = async () => {
       if (playerId) {
         setCurrentUserId(playerId);
-        return;
       }
       try {
         const res = await fetch(getGatewayUrl("/api/v1/user-mgmt/me"), {
@@ -101,7 +102,8 @@ export default function MatcheHistory({ playerId, history }: MatcheHistoryProps)
           throw new Error("Failed to fetch current user");
         }
         const data = await res.json();
-        setCurrentUserId(data.id ?? null);
+        setCurrentUserId((prev) => prev ?? data.id ?? null);
+        setCurrentUsername(data.username ?? null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       }
@@ -185,9 +187,10 @@ export default function MatcheHistory({ playerId, history }: MatcheHistoryProps)
           const team2Ids = parseIds(match.player2_id);
           const isOnTeam1 = team1Ids.includes(currentUserId ?? "");
           const opponentIds = isOnTeam1 ? team2Ids : team1Ids;
-          const opponentName = opponentIds
-            .map((id) => opponentNames[id] ?? "Unknown")
-            .join(" & ");
+          const opponentEntries = opponentIds.map((id) => ({
+            id,
+            name: opponentNames[id] ?? "Unknown",
+          }));
 
           return (
             <div
@@ -196,7 +199,33 @@ export default function MatcheHistory({ playerId, history }: MatcheHistoryProps)
                 isWin ? "bg-green-500/20" : "bg-red-500/20"
               }`}
             >
-              <div className="flex-1 text-left font-medium truncate">vs {opponentName}</div>
+              <div className="flex-1 text-left font-medium truncate">
+                vs{" "}
+                {opponentEntries.map((opponent, index) => {
+                  const isUnknown = opponent.name === "Unknown";
+                  const href =
+                    currentUsername && opponent.name === currentUsername
+                      ? "/me"
+                      : `/users/${encodeURIComponent(opponent.name)}`;
+                  const content = isUnknown ? (
+                    <span>{opponent.name}</span>
+                  ) : (
+                    <Link
+                      href={href}
+                      className="underline decoration-dotted underline-offset-2 hover:text-white"
+                    >
+                      {opponent.name}
+                    </Link>
+                  );
+
+                  return (
+                    <span key={opponent.id}>
+                      {content}
+                      {index < opponentEntries.length - 1 ? " & " : ""}
+                    </span>
+                  );
+                })}
+              </div>
               <div className="flex-1 text-center text-gray-300 uppercase">{match.game_mode}</div>
               <div className={`flex-1 text-right font-semibold ${isWin ? "text-green-300" : "text-red-300"}`}>
                 {isWin ? labels.win : labels.loss}
