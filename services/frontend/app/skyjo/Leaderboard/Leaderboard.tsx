@@ -3,6 +3,7 @@
 
 import { ChevronDown, ChevronUp, Filter, Trophy } from "lucide-react";
 import { useState } from "react";
+import { useLang } from "@/app/context/LangContext";
 
 
 
@@ -10,6 +11,7 @@ import { useState } from "react";
 
 // Leaderboard screen with enhanced features
 export default function Leaderboard() {
+  const { lang } = useLang()!;
 // Leaderboard filters
   const [leaderboardFilter, setLeaderboardFilter] = useState('all'); // all, friends, country
   const [leaderboardSort, setLeaderboardSort] = useState('rank'); // rank, wins, winRate
@@ -137,8 +139,8 @@ const [allPlayers] = useState([
                   <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-3 rounded-xl">
                     <Trophy size={32} className="text-white" />
                   </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-white">Global Leaderboard</h1>
+                  <div>{lang === "eng" ? "Global Leaderboard" : "Classement Global"}</h1>
+                    <p className="text-blue-200">{lang === "eng" ? "Top players worldwide" : "Meilleurs joueurs du monde"} • {totalPlayers.toLocaleString()} {lang === "eng" ? "players online" : "joueurs en ligne"}
                     <p className="text-blue-200">Top players worldwide • {totalPlayers.toLocaleString()} players online</p>
                   </div>
                 </div>
@@ -151,7 +153,7 @@ const [allPlayers] = useState([
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <Filter size={16} className="text-blue-300" />
-                    <span className="text-white text-sm font-medium">Filter:</span>
+                    <span className="text-white text-sm font-medium">{lang === "eng" ? "Filter:" : "Filtre :"}</span>
                     <select
                       value={leaderboardFilter}
                       onChange={(e) => {
@@ -160,13 +162,13 @@ const [allPlayers] = useState([
                       }}
                       className="bg-white/10 border border-white/30 rounded-lg px-3 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     >
-                      <option value="all" className="bg-slate-800">All Players</option>
-                      <option value="online" className="bg-slate-800">Online Only</option>
+                      <option value="all" className="bg-slate-800">{lang === "eng" ? "All Players" : "Tous les Joueurs"}</option>
+                      <option value="online" className="bg-slate-800">{lang === "eng" ? "Online Only" : "En Ligne Seulement"}</option>
                     </select>
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <span className="text-white text-sm font-medium">Sort:</span>
+                    <span className="text-white text-sm font-medium">{lang === "eng" ? "Sort:" : "Trier :"}</span>
                     <select
                       value={leaderboardSort}
                       onChange={(e) => {
@@ -175,9 +177,9 @@ const [allPlayers] = useState([
                       }}
                       className="bg-white/10 border border-white/30 rounded-lg px-3 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     >
-                      <option value="rank" className="bg-slate-800">By Rank</option>
-                      <option value="wins" className="bg-slate-800">By Wins</option>
-                      <option value="winRate" className="bg-slate-800">By Win Rate</option>
+                      <option value="rank" className="bg-slate-800">{lang === "eng" ? "By Rank" : "Par Classement"}</option>
+                      <option value="wins" className="bg-slate-800">{lang === "eng" ? "By Wins" : "Par Victoires"}</option>
+                      <option value="winRate" className="bg-slate-800">{lang === "eng" ? "By Win Rate" : "Par Taux de Victoires"}</option>
                     </select>
                   </div>
                 </div>
@@ -193,7 +195,7 @@ const [allPlayers] = useState([
                   </button>
                   
                   <span className="text-white text-sm px-3">
-                    Page {leaderboardPage} of {totalPages}
+                    {lang === "eng" ? "Page" : "Page"} {leaderboardPage} {lang === "eng" ? "of" : "sur"} {totalPages}
                   </span>
                   
                   <button
@@ -211,9 +213,9 @@ const [allPlayers] = useState([
             <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
               <div className="p-4 border-b border-white/20">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  🏅 Rankings
+                  🏅 {lang === "eng" ? "Rankings" : "Classements"}
                   <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full text-xs">
-                    Live
+                    {lang === "eng" ? "Live" : "En Direct"}
                   </span>
                 </h2>
               </div>
@@ -253,7 +255,7 @@ const [allPlayers] = useState([
                               }`}>
                                 {player.name}
                                 {player.name === getCurrentPlayerName() && (
-                                  <span className="text-xs ml-1">(You)</span>
+                                  <span className="text-xs ml-1">({lang === "eng" ? "You" : "Vous"})</span>
                                 )}
                               </h3>
                               <span className="text-sm">{player.country}</span>
@@ -273,19 +275,19 @@ const [allPlayers] = useState([
                         <div className="grid grid-cols-4 gap-6 text-sm">
                           <div>
                             <div className="text-white font-bold">{player.wins}</div>
-                            <div className="text-blue-200 text-xs">Wins</div>
+                            <div className="text-blue-200 text-xs">{lang === "eng" ? "Wins" : "Victoires"}</div>
                           </div>
                           <div>
                             <div className="text-white font-bold">{player.totalGames}</div>
-                            <div className="text-blue-200 text-xs">Games</div>
+                            <div className="text-blue-200 text-xs">{lang === "eng" ? "Games" : "Jeux"}</div>
                           </div>
                           <div>
                             <div className="text-green-400 font-bold">{player.winRate}%</div>
-                            <div className="text-blue-200 text-xs">Win Rate</div>
+                            <div className="text-blue-200 text-xs">{lang === "eng" ? "Win Rate" : "Taux de Victoires"}</div>
                           </div>
                           <div>
                             <div className="text-purple-400 font-bold">{player.avgScore}</div>
-                            <div className="text-blue-200 text-xs">Avg Score</div>
+                            <div className="text-blue-200 text-xs">{lang === "eng" ? "Avg Score" : "Score Moyen"}</div>
                           </div>
                         </div>
                       </div>

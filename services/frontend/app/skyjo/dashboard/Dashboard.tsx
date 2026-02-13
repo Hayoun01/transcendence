@@ -4,6 +4,7 @@ import { Activity, Calendar, Clock, Crown, Target, TrendingUp, Trophy, Users } f
 import { useEffect, useState } from "react";
 import { useSocket } from "../contexts/SocketContext";
 import { getGatewayUrl } from "@/lib/gateway";
+import { useLang } from "@/app/context/LangContext";
 
 interface PlayerStats {
   playerId: string;
@@ -42,6 +43,7 @@ const API_BASE_URL = getGatewayUrl("/api/v1/skyjo");
 
 export default function Dashboard() {
   const { playerID } = useSocket();
+  const { lang } = useLang()!;
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
   const [gameHistory, setGameHistory] = useState<GameHistory[]>([]);
   const [opponents, setOpponents] = useState<Opponent[]>([]);
@@ -130,7 +132,7 @@ export default function Dashboard() {
                <div className="absolute top-0 left-0 w-full h-full border-4 border-cyan-500/30 rounded-full"></div>
                <div className="absolute top-0 left-0 w-full h-full border-4 border-t-cyan-400 rounded-full animate-spin"></div>
             </div>
-            <p className="text-cyan-400 font-mono text-sm tracking-widest uppercase">Loading Stats...</p>
+            <p className="text-cyan-400 font-mono text-sm tracking-widest uppercase">{lang === "eng" ? "Loading Stats..." : "Chargement des statistiques..."}</p>
          </div>
       </div>
     );
@@ -159,10 +161,10 @@ export default function Dashboard() {
         <div className="mb-8 flex items-center justify-between">
            <div>
               <h1 className="text-3xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 tracking-tighter mb-1">
-                 PLAYER STATISTICS
+                 {lang === "eng" ? "PLAYER STATISTICS" : "STATISTIQUES DU JOUEUR"}
               </h1>
               <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">
-                 Performance Overview & History
+                 {lang === "eng" ? "Performance Overview & History" : "Aperçu des performances et historique"}
               </p>
            </div>
         </div>
@@ -184,14 +186,14 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-4xl font-black text-white">{stats.wins}</p>
-                <p className="text-green-400/70 text-xs font-bold uppercase tracking-wider">Total Wins</p>
+                <p className="text-green-400/70 text-xs font-bold uppercase tracking-wider">{lang === "eng" ? "Total Wins" : "Victoires totales"}</p>
               </div>
             </div>
             <div className="w-full bg-gray-800 h-1.5 rounded-full mt-2 overflow-hidden">
                <div className="h-full bg-green-500 rounded-full" style={{ width: `${stats.winRate}%` }}></div>
             </div>
             <div className="mt-2 text-right text-xs text-gray-400">
-               <span className="text-white font-bold">{stats.winRate}%</span> Win Rate
+               <span className="text-white font-bold">{stats.winRate}%</span> {lang === "eng" ? "Win Rate" : "Taux de victoire"}
             </div>
           </div>
 
@@ -203,12 +205,12 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-4xl font-black text-white">{stats.totalGames}</p>
-                <p className="text-cyan-400/70 text-xs font-bold uppercase tracking-wider">Games Played</p>
+                <p className="text-cyan-400/70 text-xs font-bold uppercase tracking-wider">{lang === "eng" ? "Games Played" : "Jeux joués"}</p>
               </div>
             </div>
              <div className="mt-4 flex items-center gap-2 text-xs text-gray-400 border-t border-white/5 pt-2">
                 <Clock size={12} />
-                <span>Playtime: <span className="text-white font-bold">{formatPlayTime(stats.totalPlayTime)}</span></span>
+                <span>{lang === "eng" ? "Playtime" : "Temps de jeu"}: <span className="text-white font-bold">{formatPlayTime(stats.totalPlayTime)}</span></span>
              </div>
           </div>
 
@@ -220,11 +222,11 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-4xl font-black text-white">{stats.bestScore ?? '-'}</p>
-                <p className="text-purple-400/70 text-xs font-bold uppercase tracking-wider">Best Score</p>
+                <p className="text-purple-400/70 text-xs font-bold uppercase tracking-wider">{lang === "eng" ? "Best Score" : "Meilleur score"}</p>
               </div>
             </div>
             <div className="mt-4 flex items-center gap-2 text-xs text-gray-400 border-t border-white/5 pt-2">
-                <span>Average: <span className="text-white font-bold">{stats.averageScore}</span> pts</span>
+                <span>{lang === "eng" ? "Average" : "Moyenne"}: <span className="text-white font-bold">{stats.averageScore}</span> {lang === "eng" ? "pts" : "pts"}</span>
              </div>
           </div>
 
@@ -236,12 +238,12 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-4xl font-black text-white">{stats.currentStreak}</p>
-                <p className="text-orange-400/70 text-xs font-bold uppercase tracking-wider">Current Streak</p>
+                <p className="text-orange-400/70 text-xs font-bold uppercase tracking-wider">{lang === "eng" ? "Current Streak" : "Série actuelle"}</p>
               </div>
             </div>
             <div className="mt-4 flex items-center gap-2 text-xs text-gray-400 border-t border-white/5 pt-2">
-               <span>Best Streak: <span className="text-white font-bold">{stats.bestStreak}</span></span>
-               <span className="text-orange-400 ml-auto font-bold">{stats.currentStreak > 0 ? 'ON FIRE!' : ''}</span>
+               <span>{lang === "eng" ? "Best Streak" : "Meilleure série"}: <span className="text-white font-bold">{stats.bestStreak}</span></span>
+               <span className="text-orange-400 ml-auto font-bold">{stats.currentStreak > 0 ? (lang === "eng" ? "ON FIRE!" : "EN FEU!") : ''}</span>
             </div>
           </div>
         </div>
@@ -254,10 +256,10 @@ export default function Dashboard() {
               <div className="p-5 border-b border-white/10 bg-black/20 flex justify-between items-center">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
                   <Calendar className="text-cyan-400" size={20} />
-                  MATCH HISTORY
+                  {lang === "eng" ? "MATCH HISTORY" : "HISTORIQUE DES MATCHS"}
                 </h2>
                 <span className="bg-cyan-500/20 text-cyan-300 px-3 py-1 rounded-full text-xs font-bold border border-cyan-500/30">
-                  {gameHistory.length} Matches
+                  {gameHistory.length} {lang === "eng" ? "Matches" : "Matchs"}
                 </span>
               </div>
               
@@ -317,10 +319,10 @@ export default function Dashboard() {
                               ? 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
                               : 'bg-red-500/10 text-red-400 border border-red-500/30'
                           }`}>
-                            {game.position === 1 ? '1st Place' : `${game.position}th Place`}
+                            {game.position === 1 ? (lang === "eng" ? "1st Place" : "1ère place") : `${game.position}${lang === "eng" ? "th Place" : "e place"}`}
                           </div>
                           <div className="text-2xl font-black text-white">
-                            {game.finalScore} <span className="text-xs font-normal text-gray-400">pts</span>
+                            {game.finalScore} <span className="text-xs font-normal text-gray-400">{lang === "eng" ? "pts" : "pts"}</span>
                           </div>
                         </div>
                       </div>
@@ -331,8 +333,8 @@ export default function Dashboard() {
                     <div className="inline-block p-4 rounded-full bg-white/5 mb-4">
                        <Activity size={32} className="text-cyan-400/50" />
                     </div>
-                    <p className="text-gray-300 font-bold">No games played yet</p>
-                    <p className="text-gray-500 text-xs mt-1 uppercase tracking-wide">Jump into a lobby to start your journey!</p>
+                    <p className="text-gray-300 font-bold">{lang === "eng" ? "No games played yet" : "Aucun jeu joué pour le moment"}</p>
+                    <p className="text-gray-500 text-xs mt-1 uppercase tracking-wide">{lang === "eng" ? "Jump into a lobby to start your journey!" : "Sautez dans un lobby pour commencer votre voyage!"}</p>
                   </div>
                 )}
               </div>
@@ -344,7 +346,7 @@ export default function Dashboard() {
             <div className="bg-gray-900/60 backdrop-blur-md rounded-2xl p-5 border border-white/10 shadow-xl">
               <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
                 <Users size={16} className="text-purple-400" />
-                Frequent Rivals
+                {lang === "eng" ? "Frequent Rivals" : "Rivaux fréquents"}
               </h3>
               
               <div className="space-y-3">
@@ -372,14 +374,14 @@ export default function Dashboard() {
                         <span className="text-gray-200 font-bold text-sm">{opponent.name}</span>
                       </div>
                       <span className="text-purple-300 text-xs font-mono bg-purple-500/10 px-2 py-1 rounded border border-purple-500/20">
-                         {opponent.count} G
+                         {opponent.count} {lang === "eng" ? "G" : "J"}
                       </span>
                     </div>
                   ))
                 ) : (
                   <div className="text-center py-8 px-4 bg-white/5 rounded-xl border border-dashed border-white/10">
                     <p className="text-gray-400 text-xs">
-                      Play more games to reveal your rivals!
+                      {lang === "eng" ? "Play more games to reveal your rivals!" : "Jouez plus de jeux pour révéler vos rivaux!"}
                     </p>
                   </div>
                 )}

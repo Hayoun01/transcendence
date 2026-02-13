@@ -2,8 +2,9 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { getGatewayUrl, getWsGatewayUrl } from "@/lib/gateway";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react"; 
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from 'next/navigation';
+import { useLang } from "@/app/context/LangContext";
 
 export interface UserProfile {
   username: string;
@@ -44,6 +45,7 @@ const COUNTDOWN_TIME = 5;
 
 export default function Game2vs2() {
   const router = useRouter();
+  const { lang } = useLang()!;
   const wsRef = useRef<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [playerId, setPlayerId] = useState<string | null>(null);
@@ -367,7 +369,7 @@ export default function Game2vs2() {
               className="flex items-center gap-2 px-4 py-2 border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 text-gray-300 hover:text-white rounded-lg transition-all duration-300 group"
           >
               <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span className="font-bold text-sm tracking-wide uppercase">Home</span>
+              <span className="font-bold text-sm tracking-wide uppercase">{lang === "eng" ? "Home" : "Accueil"}</span>
           </button>
       </div>
 
@@ -397,7 +399,7 @@ export default function Game2vs2() {
                  <div className="absolute top-0 left-0 w-full h-full border-4 border-cyan-500/30 rounded-full"></div>
                  <div className="absolute top-0 left-0 w-full h-full border-4 border-t-cyan-400 rounded-full animate-spin"></div>
               </div>
-              <p className="text-gray-400 text-xs">Waiting for 4 players...</p>
+              <p className="text-gray-400 text-xs">{lang === "eng" ? "Waiting for 4 players..." : "En attente de 4 joueurs..."}</p>
             </div>
           )}
 
@@ -410,12 +412,12 @@ export default function Game2vs2() {
                 className="w-10 h-10 rounded-full border border-cyan-500 object-cover mr-3"
               />
               <div className="text-left">
-                <p className="text-xs text-gray-400">Logged in as</p>
+                <p className="text-xs text-gray-400">{lang === "eng" ? "Logged in as" : "Connecté en tant que"}</p>
                 <p className="text-cyan-400 font-bold text-sm">{myProfile.username}</p>
               </div>
             </div>
           ) : (
-            playerId && <div className="text-gray-500 text-xs mt-4">Loading Profile...</div>
+            playerId && <div className="text-gray-500 text-xs mt-4">{lang === "eng" ? "Loading Profile..." : "Chargement du profil..."}</div>
           )}
           
           {connectionStatus === 'connected' && (
@@ -423,7 +425,7 @@ export default function Game2vs2() {
               onClick={disconnectFromServer}
               className="mt-8 w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/50 hover:border-red-500 rounded-lg transition-all duration-300 text-sm font-bold uppercase tracking-wider"
             >
-              Cancel Matchmaking
+              {lang === "eng" ? "Cancel Matchmaking" : "Annuler l'appairage"}
             </button>
           )}
         </div>
@@ -436,15 +438,15 @@ export default function Game2vs2() {
           {/* Header Info */}
           <div className="text-center mb-6">
              <div className="inline-block bg-gray-900/60 backdrop-blur border border-white/10 px-6 py-2 rounded-full mb-2">
-                <span className="text-gray-400 text-xs uppercase tracking-widest mr-2">Room ID</span>
+                <span className="text-gray-400 text-xs uppercase tracking-widest mr-2">{lang === "eng" ? "Room ID" : "ID de la salle"}</span>
                 <span className="text-white font-mono">{roomId}</span>
              </div>
              <div className="flex justify-center gap-4">
                <span className="text-yellow-400 font-bold text-sm bg-yellow-400/10 px-3 py-1 rounded border border-yellow-400/20">
-                 YOU ARE PLAYER #{player_N}
+                 {lang === "eng" ? "YOU ARE PLAYER" : "VOUS êTES JOUEUR"} #{player_N}
                </span>
                <span className="text-gray-400 font-bold text-sm bg-gray-800 px-3 py-1 rounded border border-gray-700">
-                  CONTROLS: {player_N && player_N % 2 === 0 ? "W / UP" : "S / DOWN"}
+                  {lang === "eng" ? "CONTROLS" : "COMMANDES"}: {player_N && player_N % 2 === 0 ? (lang === "eng" ? "W / UP" : "W / HAUT") : (lang === "eng" ? "S / DOWN" : "S / BAS")}
                </span>
              </div>
           </div>
@@ -472,7 +474,7 @@ export default function Game2vs2() {
                   </div>
                </div>
                <div>
-                  <h3 className="text-cyan-400 font-bold text-sm tracking-wider">TEAM BLUE</h3>
+                  <h3 className="text-cyan-400 font-bold text-sm tracking-wider">{lang === "eng" ? "TEAM BLUE" : "ÉQUIPE BLEU"}</h3>
                   <div className="flex items-baseline gap-2">
                     <span className="text-xs text-gray-400">{myProfile?.username}</span>
                     <span className="text-xs text-gray-500">&</span>
@@ -484,12 +486,12 @@ export default function Game2vs2() {
 
             {/* VS Badge / Disconnect */}
             <div className="flex flex-col items-center gap-2">
-               <span className="text-gray-600 font-black text-3xl italic">VS</span>
+               <span className="text-gray-600 font-black text-3xl italic">{lang === "eng" ? "VS" : "VS"}</span>
                <button 
                  onClick={disconnectFromServer}
                  className="text-xs text-red-400 hover:text-red-300 underline"
                >
-                 Quit
+                 {lang === "eng" ? "Quit" : "Quitter"}
                </button>
             </div>
 
@@ -497,7 +499,7 @@ export default function Game2vs2() {
              <div className="flex items-center space-x-4 flex-row-reverse space-x-reverse w-full md:w-auto justify-center md:justify-start">
                <div className="text-5xl font-black text-white mr-4 drop-shadow-[0_0_10px_rgba(192,132,252,0.8)]">{opponentScore}</div>
                <div>
-                  <h3 className="text-purple-400 font-bold text-sm tracking-wider text-right">TEAM PURPLE</h3>
+                  <h3 className="text-purple-400 font-bold text-sm tracking-wider text-right">{lang === "eng" ? "TEAM PURPLE" : "ÉQUIPE VIOLET"}</h3>
                   <div className="flex items-baseline gap-2 justify-end">
                     <span className="text-xs text-gray-400">{opponent1Profile?.username}</span>
                     <span className="text-xs text-gray-500">&</span>
@@ -593,12 +595,12 @@ export default function Game2vs2() {
                   <h2 className="text-5xl font-black text-white mb-2 uppercase tracking-tighter">
                     {gameOver}
                   </h2>
-                  <p className="text-cyan-300 mb-8">Game Finished</p>
+                  <p className="text-cyan-300 mb-8">{lang === "eng" ? "Game Finished" : "Jeu Terminé"}</p>
                   <button 
                     onClick={disconnectFromServer}
                     className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest hover:bg-cyan-400 hover:scale-105 transition-all duration-200"
                   >
-                    Return to Menu
+                    {lang === "eng" ? "Return to Menu" : "Retour au menu"}
                   </button>
                 </div>
               )}

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { useLang } from "@/app/context/LangContext";
 
 // --- CONSTANTS ---
 const CANVAS_WIDTH = 800;
@@ -19,6 +20,7 @@ const AI_PREDICTION_DEPTH = 3;
 const EASY_AI_SPEED_MULTIPLIER = 0.6; 
 
 export default function AI() {
+    const { lang } = useLang()!;
     // --- STATE ---
     const [leftPlayerPaddleY, setLeftPlayerPaddleY] = useState<number>(CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2);
     const [rightPlayerPaddleY, setRightPlayerPaddleY] = useState<number>(CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2);
@@ -357,7 +359,7 @@ export default function AI() {
                                     onClick={startgame}
                                     className="px-8 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold uppercase tracking-widest rounded shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-all transform hover:scale-105"
                                 >
-                                    Start Game
+                                    {lang === "eng" ? "Start Game" : "Commencer le jeu"}
                                 </button>
                                 
                                 {/* Difficulty Tabs */}
@@ -385,13 +387,13 @@ export default function AI() {
                                     onClick={togglePause}
                                     className="px-6 py-2 border border-cyan-500/50 hover:bg-cyan-500/10 text-cyan-400 font-bold uppercase text-xs tracking-widest rounded transition-all"
                                 >
-                                    {isPaused ? 'Resume' : 'Pause'}
+                                    {isPaused ? (lang === "eng" ? 'Resume' : 'Reprendre') : (lang === "eng" ? 'Pause' : 'Pause')}
                                 </button>
                                 <button
                                     onClick={resetGame}
                                     className="px-6 py-2 border border-red-500/50 hover:bg-red-500/10 text-red-400 font-bold uppercase text-xs tracking-widest rounded transition-all"
                                 >
-                                    Reset
+                                    {lang === "eng" ? 'Reset' : 'Réinitialiser'}
                                 </button>
                             </div>
                         )}
@@ -399,7 +401,7 @@ export default function AI() {
 
                     {/* AI Score */}
                     <div className="text-center md:text-right">
-                        <div className="text-purple-400 font-bold text-sm tracking-wider mb-1">AI BOT</div>
+                        <div className="text-purple-400 font-bold text-sm tracking-wider mb-1">{lang === "eng" ? "AI BOT" : "BOT IA"}</div>
                         <div className="text-4xl font-black text-white drop-shadow-[0_0_10px_rgba(192,132,252,0.5)]">
                             {rightPlayerScore}
                         </div>
@@ -479,12 +481,12 @@ export default function AI() {
                                 <h2 className="text-5xl font-black text-white mb-2 uppercase tracking-tighter">
                                     {gameOver}
                                 </h2>
-                                <p className="text-cyan-300 mb-8">Press Reset to play again</p>
+                                <p className="text-cyan-300 mb-8">{lang === "eng" ? "Press Reset to play again" : "Appuyez sur Réinitialiser pour rejouer"}</p>
                                 <button 
                                     onClick={resetGame}
                                     className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest hover:bg-cyan-400 hover:scale-105 transition-all duration-200"
                                 >
-                                    Play Again
+                                    {lang === "eng" ? "Play Again" : "Rejouer"}
                                 </button>
                             </div>
                         )}
@@ -493,7 +495,7 @@ export default function AI() {
                 
                 {/* Instructions Footer */}
                 <div className="mt-4 text-center text-gray-500 text-xs font-mono">
-                    Use <span className="text-cyan-400 font-bold">[W]</span> and <span className="text-cyan-400 font-bold">[S]</span> to move • SPACE to pause
+                    Use <span className="text-cyan-400 font-bold">[W]</span> and <span className="text-cyan-400 font-bold">[S]</span> {lang === "eng" ? "to move • SPACE to pause" : "pour se déplacer • SPACE pour pause"}
                 </div>
             </div>
         </div>

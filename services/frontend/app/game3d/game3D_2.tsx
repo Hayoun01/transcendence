@@ -5,8 +5,10 @@ import Link from 'next/link';
 import 'babylonjs-loaders';
 import { GamepadIcon, Trophy, User, Users, Wifi, WifiOff, ArrowLeft } from 'lucide-react';
 import { getWsGatewayUrl } from "@/lib/gateway";
+import { useLang } from "@/app/context/LangContext";
 const COUNTDOWN_TIME =5; // 5 seconds countdown
 export default function Game3D() {
+    const { lang } = useLang()!;
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const sceneRef = useRef<BABYLON.Scene | null>(null);
     const engineRef = useRef<BABYLON.Engine | null>(null);
@@ -651,7 +653,7 @@ export default function Game3D() {
                     className="flex items-center gap-2 px-4 py-2 border border-white/10 bg-black/60 backdrop-blur-sm hover:bg-white/10 text-gray-300 hover:text-white rounded-lg transition-all duration-300 group"
                 >
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                    <span className="font-bold text-sm tracking-wide uppercase">Home</span>
+                    <span className="font-bold text-sm tracking-wide uppercase">{lang === "eng" ? "Home" : "Accueil"}</span>
                 </Link>
             </div>
             
@@ -668,7 +670,7 @@ export default function Game3D() {
             <div className="text-9xl font-bold text-white animate-pulse drop-shadow-2xl">
               {countdown}
             </div>
-            <p className="text-2xl text-white mt-4">Get Ready!</p>
+            <p className="text-2xl text-white mt-4">{lang === "eng" ? "Get Ready!" : "Préparez-vous!"}</p>
           </div>
         </div>
       )}
@@ -679,15 +681,15 @@ export default function Game3D() {
                         <Trophy className="w-16 h-16 mx-auto text-yellow-500" />
                         <h2 className="text-4xl font-bold text-white">{gameOver}</h2>
                         <div className="text-xl text-gray-300">
-                          Final Score: {myScore} - {opponentScore}
+                          {lang === "eng" ? "Final Score" : "Score final"}: {myScore} - {opponentScore}
                         </div>
-                        {!youropponentDisconnected ?<button
+                        {/* {!youropponentDisconnected ?<button
                           onClick={() => {
                             resetGame();
                           }}
                           className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 transform hover:scale-105"
                         >
-                          Play Again
+                          {lang === "eng" ? "Play Again" : "Jouer à nouveau"}
                         </button>:
                         <button
                           onClick={() => {
@@ -695,10 +697,10 @@ export default function Game3D() {
                           }}
                           className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 transform hover:scale-105"
                         >
-                          quit
+                          {lang === "eng" ? "Quit" : "Quitter"}
                         </button>
                         
-                        }
+                        } */}
                       </div>
                     </div>
                   )
@@ -730,12 +732,12 @@ export default function Game3D() {
                     <div className="text-sm space-y-2">
                         <div className="text-cyan-400 font-semibold mb-2 flex items-center gap-2">
                             <GamepadIcon className="w-4 h-4" />
-                            CONTROLS
+                            {lang === "eng" ? "CONTROLS" : "COMMANDES"}
                         </div>
                         <div className="flex items-center gap-2">
                             <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">←</kbd>
                             <kbd className="px-2 py-1 bg-gray-700 rounded text-xs">→</kbd>
-                            <span className="text-gray-300">Move Paddle</span>
+                            <span className="text-gray-300">{lang === "eng" ? "Move Paddle" : "Déplacer raquette"}</span>
                         </div>
                     </div>
                 </div>
@@ -767,7 +769,7 @@ export default function Game3D() {
                         <div className="flex items-center space-x-3">
                             <div className="animate-spin rounded-full h-6 w-6 border-2 border-yellow-400 border-t-transparent"></div>
                             <span className="text-yellow-400 font-medium">
-                                Finding match...
+                                {lang === "eng" ? "Finding match..." : "Recherche de match..."}
                             </span>
                         </div>
                     )}
@@ -777,7 +779,7 @@ export default function Game3D() {
                         <div className="flex items-center space-x-3">
                             <Users className="w-5 h-5 text-purple-400" />
                             <div>
-                                <div className="text-xs text-gray-400 uppercase tracking-wide">Room</div>
+                                <div className="text-xs text-gray-400 uppercase tracking-wide">{lang === "eng" ? "Room" : "Salle"}</div>
                                 <div className="font-mono text-purple-300 text-sm">
                                     {roomId.slice(0, 8)}
                                 </div>
