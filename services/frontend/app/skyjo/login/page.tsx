@@ -267,7 +267,7 @@ return (
           type="text"
           value={loginForm.fullName}
           onChange={(e) => setLoginForm(prev => ({ ...prev, fullName: e.target.value }))}
-          placeholder={lang === "eng" ? "Enter your full name" : "Entrez votre nom complet"} => ({ ...prev, fullName: e.target.value }))}
+          placeholder={lang === "eng" ? "Enter your full name" : "Entrez votre nom complet"}
           placeholder="Enter your full name"
           className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
         />

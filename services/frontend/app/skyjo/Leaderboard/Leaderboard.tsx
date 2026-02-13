@@ -139,9 +139,9 @@ const [allPlayers] = useState([
                   <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-3 rounded-xl">
                     <Trophy size={32} className="text-white" />
                   </div>
-                  <div>{lang === "eng" ? "Global Leaderboard" : "Classement Global"}</h1>
-                    <p className="text-blue-200">{lang === "eng" ? "Top players worldwide" : "Meilleurs joueurs du monde"} • {totalPlayers.toLocaleString()} {lang === "eng" ? "players online" : "joueurs en ligne"}
-                    <p className="text-blue-200">Top players worldwide • {totalPlayers.toLocaleString()} players online</p>
+                  <div>
+                    <h1 className="text-2xl font-bold text-white">{lang === "eng" ? "Global Leaderboard" : "Classement Global"}</h1>
+                    <p className="text-blue-200">{lang === "eng" ? "Top players worldwide" : "Meilleurs joueurs du monde"} • {totalPlayers.toLocaleString()} {lang === "eng" ? "players online" : "joueurs en ligne"}</p>
                   </div>
                 </div>
               </div>
