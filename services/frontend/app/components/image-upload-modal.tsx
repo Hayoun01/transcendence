@@ -63,17 +63,27 @@ export function ImageUploadModal({
       return;
     }
 
-    // Validate file size (5Kb limit)
-    // if (file.size > 5 * 1024) {
-    //   alert(lang === "eng" ? "File size must be less than 5Kb" : "La taille du fichier doit être inférieure à 5 Ko");
-    //   return;
-    // }
-
-    setSelectedFile(file);
-
-    // Create preview URL
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    // Validate image is square
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        if (img.width !== img.height) {
+          alert(lang === "eng"
+            ? "Please select a square image (width and height must be equal)"
+            : "Veuillez sélectionner une image carrée (largeur et hauteur doivent être égales)");
+          return;
+        }
+        setSelectedFile(file);
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+      };
+      img.onerror = () => {
+        alert(lang === "eng" ? "Could not load image." : "Impossible de charger l'image.");
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleUpload = () => {
@@ -129,6 +139,11 @@ export function ImageUploadModal({
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {lang === "eng" ? "Supports: JPEG, PNG" : "Formats pris en charge : JPEG, PNG"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {lang === "eng"
+                    ? "Image must be square (width = height)"
+                    : "L'image doit être carrée (largeur = hauteur)"}
                 </p>
               </div>
             </div>
