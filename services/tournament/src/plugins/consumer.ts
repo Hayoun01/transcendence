@@ -32,6 +32,7 @@ export default fp<AmqpPluginOptions>(async (fastify, opts) => {
   await channel.assertQueue(queue, { durable: true });
   await channel.bindQueue(queue, exchange, "tournament.*");
   await channel.bindQueue(queue, exchange, "match.*");
+  await channel.bindQueue(queue, exchange, "game.*");
 
   fastify.decorate("rabbit", { connection, channel });
 
