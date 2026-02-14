@@ -357,6 +357,30 @@ export default ((fastify, opts) => {
       return newGameMatchId;
     });
 
+    const opponentId =
+      match.playerOneId === userId ? match.playerTwoId : match.playerOneId;
+    try {
+      fastify.rabbit.channel.publish(
+        "user.events",
+        "tournament.match-started",
+        Buffer.from(
+          JSON.stringify({
+            userId: opponentId,
+            fromUser: userId,
+            matchId: matchId,
+            gameMatchId: gameMatchId,
+            tournamentId: match.tournamentId,
+          }),
+        ),
+        { persistent: true },
+      );
+    } catch (error) {
+      fastify.log.error(
+        { error },
+        "Failed to publish match start notification",
+      );
+    }
+
     return {
       success: true,
       gameMatchId,

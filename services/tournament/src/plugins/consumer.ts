@@ -1,4 +1,4 @@
-import amqp, { type ChannelModel } from "amqplib";
+import amqp from "amqplib";
 import fp from "fastify-plugin";
 import { prisma } from "../db/prisma";
 
@@ -24,7 +24,7 @@ const isMatchEndedEvent = (data: unknown): data is MatchEndedEvent => {
 };
 
 export default fp<AmqpPluginOptions>(async (fastify, opts) => {
-  const connection: ChannelModel = await amqp.connect(opts.url);
+  const connection = await amqp.connect(opts.url);
   const channel = await connection.createChannel();
   const exchange = "user.events";
   const queue = "tournament.queue";
@@ -32,6 +32,8 @@ export default fp<AmqpPluginOptions>(async (fastify, opts) => {
   await channel.assertQueue(queue, { durable: true });
   await channel.bindQueue(queue, exchange, "tournament.*");
   await channel.bindQueue(queue, exchange, "match.*");
+
+  fastify.decorate("rabbit", { connection, channel });
 
   fastify.log.info("Consumer started!");
 

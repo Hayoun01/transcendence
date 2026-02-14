@@ -45,6 +45,18 @@ const FORMATTERS = async (p) => {
         username,
       },
     }),
+    "tournament:match-started": () => ({
+      type: "tournament:match-started",
+      title: "Tournament match started",
+      content: `@${username} has started your tournament match. Join now!`,
+      fromUser: {
+        id: p.fromUser,
+        username,
+      },
+      matchId: p.matchId,
+      gameMatchId: p.gameMatchId,
+      tournamentId: p.tournamentId,
+    }),
   };
 };
 
@@ -60,6 +72,7 @@ async function consumer() {
   await channel.bindQueue(queue, exchange, "user.*");
   await channel.bindQueue(queue, exchange, "friendship.*");
   await channel.bindQueue(queue, exchange, "message.*");
+  await channel.bindQueue(queue, exchange, "tournament.*");
 
   channel.consume(
     queue,
@@ -122,6 +135,18 @@ async function consumer() {
               break;
             case "message.new":
               formatted = formatter["message:new"]();
+              await prisma.notification.create({
+                data: {
+                  type: formatted.type,
+                  title: formatted.title,
+                  content: formatted.content,
+                  userId: parsedMsg.userId,
+                },
+              });
+              broadcastToUser(parsedMsg.userId, formatted);
+              break;
+            case "tournament.match-started":
+              formatted = formatter["tournament:match-started"]();
               await prisma.notification.create({
                 data: {
                   type: formatted.type,
