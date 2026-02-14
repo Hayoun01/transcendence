@@ -122,7 +122,13 @@ export default fp<AmqpPluginOptions>(async (fastify, opts) => {
     fastify.log.info({ matchId: match.id, winnerId }, "game.result processed");
   };
 
-  channel.consume(
+  fastify.addHook("onClose", async () => {
+    await connection.close();
+    await channel.close();
+    fastify.log.info("Consumer closed!");
+  });
+
+  await channel.consume(
     queue,
     async (msg) => {
       if (msg) {
@@ -145,10 +151,4 @@ export default fp<AmqpPluginOptions>(async (fastify, opts) => {
     },
     { noAck: false },
   );
-
-  fastify.addHook("onClose", async () => {
-    await connection.close();
-    await channel.close();
-    fastify.log.info("Consumer closed!");
-  });
 });
