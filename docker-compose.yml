@@ -60,6 +60,7 @@ services:
       rabbit:
         condition: service_healthy
     env_file:
+      - ./.env.shared
       - ./services/tournament/.env
     networks:
       - transcendence-network
