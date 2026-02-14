@@ -128,7 +128,7 @@ export function ImageUploadModal({
                   {lang === "eng" ? "Drag and drop your image here, or click to browse" : "Glissez-déposez votre image ici, ou cliquez pour parcourir"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {lang === "eng" ? "Supports: JPEG, PNG (Max 5Kb)" : "Formats pris en charge : JPEG, PNG (Max 1 Ko)"}
+                  {lang === "eng" ? "Supports: JPEG, PNG" : "Formats pris en charge : JPEG, PNG"}
                 </p>
               </div>
             </div>
