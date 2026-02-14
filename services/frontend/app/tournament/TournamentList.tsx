@@ -83,6 +83,7 @@ export default function TournamentList() {
             join: 'Rejoindre',
             leave: 'Quitter',
             startTournament: 'Démarrer le tournoi',
+            joinNextGame: 'Rejoindre le prochain match',
             starting: 'Démarrage...',
             joining: 'Inscription...',
             leaving: 'Désinscription...',
@@ -120,6 +121,7 @@ export default function TournamentList() {
             join: 'Join',
             leave: 'Leave',
             startTournament: 'Start Tournament',
+            joinNextGame: 'Join next game',
             starting: 'Starting...',
             joining: 'Joining...',
             leaving: 'Leaving...',
@@ -149,6 +151,9 @@ export default function TournamentList() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionErrorId, setActionErrorId] = useState<string | null>(null);
+  const [matchActionLoadingId, setMatchActionLoadingId] = useState<string | null>(null);
+  const [matchActionError, setMatchActionError] = useState<string | null>(null);
+  const [matchActionErrorId, setMatchActionErrorId] = useState<string | null>(null);
   const [bracketOpen, setBracketOpen] = useState(false);
   const [bracketMatches, setBracketMatches] = useState<any[]>([]);
   const [bracketLoading, setBracketLoading] = useState(false);
@@ -174,7 +179,7 @@ export default function TournamentList() {
       }
 
       const data = await response.json();
-      setTournaments(data);
+      setTournaments(data.reverse());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -390,6 +395,51 @@ export default function TournamentList() {
     }
   };
 
+  const getNextPlayableMatch = (tournament: Tournament, userId: string | null) => {
+    if (!userId) {
+      return null;
+    }
+    return (
+      tournament.matches.find(
+        (match) =>
+          match.status !== 'completed' &&
+          (match.playerOneId === userId || match.playerTwoId === userId)
+      ) ?? null
+    );
+  };
+
+  const isMatchReady = (match: any) => Boolean(match?.playerOneId && match?.playerTwoId);
+
+  const handleJoinNextGame = async (tournamentId: string, matchId: string) => {
+    setMatchActionLoadingId(matchId);
+    setMatchActionError(null);
+    setMatchActionErrorId(null);
+    try {
+      const response = await fetch(
+        getGatewayUrl(`/api/v1/tournament/matches/${matchId}/start`),
+        {
+          method: 'POST',
+          credentials: 'include',
+        }
+      );
+      if (!response.ok) {
+        throw new Error('Failed to start match');
+      }
+      const data = await response.json();
+      if (!data?.gameMatchId) {
+        throw new Error('Failed to start match');
+      }
+      window.location.assign(
+        `/game2d?tournamentId=${tournamentId}&roomId=${data.gameMatchId}&privatee=true`
+      );
+    } catch (err) {
+      setMatchActionError(err instanceof Error ? err.message : 'An error occurred');
+      setMatchActionErrorId(matchId);
+    } finally {
+      setMatchActionLoadingId(null);
+    }
+  };
+
   const filteredTournaments = tournaments.filter((tournament) => {
     const matchesSearch = tournament.name.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'all' || tournament.status === statusFilter;
@@ -506,6 +556,9 @@ export default function TournamentList() {
               : false;
             const isFull = tournament.participants.length >= tournament.numberOfParticipants;
             const isActionLoading = actionLoadingId === tournament.id;
+            const nextMatch = getNextPlayableMatch(tournament, currentUserId);
+            const isNextMatchReady = isMatchReady(nextMatch);
+            const isMatchActionLoading = nextMatch ? matchActionLoadingId === nextMatch.id : false;
 
             return (
               <div
@@ -588,12 +641,28 @@ export default function TournamentList() {
                     </button>
                   )
                 ) : (
-                  <button
-                    onClick={() => handleViewDetails(tournament.id)}
-                    className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
-                  >
-                    {t.viewDetails}
-                  </button>
+                  <div className="mt-4 flex flex-col gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button
+                        onClick={() => handleViewDetails(tournament.id)}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
+                      >
+                        {t.viewDetails}
+                      </button>
+                      {nextMatch && (
+                        <button
+                          onClick={() => handleJoinNextGame(tournament.id, nextMatch.id)}
+                          disabled={!isNextMatchReady || isMatchActionLoading}
+                          className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-medium py-2 px-4 rounded transition-colors"
+                        >
+                          {isMatchActionLoading ? t.starting : t.joinNextGame}
+                        </button>
+                      )}
+                    </div>
+                    {nextMatch && matchActionErrorId === nextMatch.id && matchActionError && (
+                      <div className="text-sm text-red-400">{matchActionError}</div>
+                    )}
+                  </div>
                 )}
                 {actionErrorId === tournament.id && actionError && (
                   <div className="mt-2 text-sm text-red-400">{actionError}</div>
