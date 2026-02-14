@@ -209,7 +209,7 @@ export default function TournamentList() {
       name: `${player1} vs ${player2}`,
       nextMatchId: next_match,
       tournamentRoundText: tree.round?.toString() ?? '',
-      startTime: tree.playedAt,
+      startTime: null,
       state: 'DONE',
       participants: [
         {

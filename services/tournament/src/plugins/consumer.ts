@@ -40,6 +40,7 @@ export default fp<AmqpPluginOptions>(async (fastify, opts) => {
 
   const handleMatchEnded = async (data: MatchEndedEvent) => {
     const { winnerId, gameMatchId, tournamentId } = data;
+    console.log("Handling match ended event:", data);
 
     const match = await prisma.match.findFirst({
       where: { gameMatchId, tournamentId, deletedAt: null },
