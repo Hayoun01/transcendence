@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useLang } from "../context/LangContext";
 import { getGatewayUrl } from "@/lib/gateway";
@@ -76,6 +76,11 @@ export default function MatcheHistory({ playerId, history }: MatcheHistoryProps)
   const [opponentNames, setOpponentNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hoveredMatch, setHoveredMatch] = useState<MatchItem | null>(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [tooltipSize, setTooltipSize] = useState({ width: 0, height: 0 });
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
 
   const parseIds = (value: string) =>
     value
@@ -152,6 +157,12 @@ export default function MatcheHistory({ playerId, history }: MatcheHistoryProps)
     loadOpponents();
   }, [currentUserId, sortedHistory]);
 
+  useEffect(() => {
+    if (!hoveredMatch || !tooltipRef.current) return;
+    const { width, height } = tooltipRef.current.getBoundingClientRect();
+    setTooltipSize({ width, height });
+  }, [hoveredMatch]);
+
   if (loading) {
     return (
       <div className="flex h-full w-full items-center justify-center p-4 text-gray-400">
@@ -177,7 +188,7 @@ export default function MatcheHistory({ playerId, history }: MatcheHistoryProps)
   }
 
   return (
-    <div className="w-full h-full p-4">
+    <div ref={containerRef} className="relative w-full h-full p-4">
       <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto">
         {sortedHistory.map((match) => {
           const winnerIds = parseIds(match.winner_id);
@@ -195,6 +206,32 @@ export default function MatcheHistory({ playerId, history }: MatcheHistoryProps)
           return (
             <div
               key={match.id}
+              onMouseEnter={(event) => {
+                if (!containerRef.current) return;
+                const rect = containerRef.current.getBoundingClientRect();
+                const rawX = event.clientX - rect.left + 12;
+                const rawY = event.clientY - rect.top + 12;
+                const maxX = Math.max(rect.width - tooltipSize.width - 8, 0);
+                const maxY = Math.max(rect.height - tooltipSize.height - 8, 0);
+                setTooltipPos({
+                  x: Math.min(Math.max(rawX, 0), maxX),
+                  y: Math.min(Math.max(rawY, 0), maxY),
+                });
+                setHoveredMatch(match);
+              }}
+              onMouseLeave={() => setHoveredMatch(null)}
+              onMouseMove={(event) => {
+                if (!containerRef.current) return;
+                const rect = containerRef.current.getBoundingClientRect();
+                const rawX = event.clientX - rect.left + 12;
+                const rawY = event.clientY - rect.top + 12;
+                const maxX = Math.max(rect.width - tooltipSize.width - 8, 0);
+                const maxY = Math.max(rect.height - tooltipSize.height - 8, 0);
+                setTooltipPos({
+                  x: Math.min(Math.max(rawX, 0), maxX),
+                  y: Math.min(Math.max(rawY, 0), maxY),
+                });
+              }}
               className={`flex items-center justify-between rounded-md px-4 py-3 text-sm text-white border border-gray-600 ${
                 isWin ? "bg-green-500/20" : "bg-red-500/20"
               }`}
@@ -234,6 +271,22 @@ export default function MatcheHistory({ playerId, history }: MatcheHistoryProps)
           );
         })}
       </div>
+      {hoveredMatch && (
+        <div
+          ref={tooltipRef}
+          className="absolute z-50 rounded-md border border-gray-700 bg-black/90 px-3 py-2 text-xs text-white shadow-lg"
+          style={{ left: tooltipPos.x, top: tooltipPos.y }}
+        >
+          <div className="text-gray-300">Score</div>
+          <div className="font-semibold">
+            {hoveredMatch.player1_score} - {hoveredMatch.player2_score}
+          </div>
+          <div className="mt-1 text-gray-300">Date</div>
+          <div className="font-semibold">
+            {new Date(hoveredMatch.timestamp).toLocaleString()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
