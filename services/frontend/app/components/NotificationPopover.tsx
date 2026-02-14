@@ -84,6 +84,31 @@ export default function NotificationPopover() {
             </ToastAction>
           ),
         });
+      } else if (data.type === "tournament:match-started") {
+        setNotifications((prev) => [{
+          title: data.title,
+          content: data.content,
+        }, ...prev]);
+        setRedDot(true);
+        
+        // Trigger toast notification for tournament match
+        toast({
+          title: data.title,
+          description: data.content,
+          action: (
+            <ToastAction
+              altText="Join Match"
+              className="bg-green-600 text-white hover:bg-green-700"
+              onClick={() => {
+                navigate.push(
+                  `/game2d?tournamentId=${data.tournamentId}&roomId=${data.gameMatchId}&privatee=true`
+                );
+              }}
+            >
+              Join Match
+            </ToastAction>
+          ),
+        });
       }
     };
     return () => {
