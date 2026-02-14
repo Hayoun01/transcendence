@@ -45,7 +45,7 @@ export default fp<AmqpPluginOptions>(async (fastify, opts) => {
     });
 
     if (!match) {
-      fastify.log.warn({ data }, "match.ended match not found");
+      fastify.log.warn({ data }, "game.result match not found");
       return;
     }
 
@@ -119,7 +119,7 @@ export default fp<AmqpPluginOptions>(async (fastify, opts) => {
       }
     });
 
-    fastify.log.info({ matchId: match.id, winnerId }, "match.ended processed");
+    fastify.log.info({ matchId: match.id, winnerId }, "game.result processed");
   };
 
   channel.consume(
@@ -129,9 +129,9 @@ export default fp<AmqpPluginOptions>(async (fastify, opts) => {
         try {
           const data = JSON.parse(msg.content.toString());
           switch (msg.fields.routingKey) {
-            case "match.ended":
+            case "game.result":
               if (!isMatchEndedEvent(data)) {
-                fastify.log.warn({ data }, "match.ended invalid payload");
+                fastify.log.warn({ data }, "game.result invalid payload");
                 break;
               }
               await handleMatchEnded(data);
