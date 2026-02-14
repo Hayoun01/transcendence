@@ -11,8 +11,6 @@ services:
     networks:
       - transcendence-network
     depends_on:
-      - game_backend
-      - skyjo_backend
       - api_gateway
   api_gateway:
     build:
@@ -25,6 +23,8 @@ services:
       - user-mgmt
       - chat
       - notification
+      - game_backend
+      - skyjo_backend
     env_file:
       - ./.env.shared
     ports:
@@ -46,8 +46,6 @@ services:
     env_file:
       - ./.env.shared
       - ./services/auth/.env
-    # ports:
-    #   - "3001:3001"
     networks:
       - transcendence-network
     volumes:
@@ -62,6 +60,7 @@ services:
       rabbit:
         condition: service_healthy
     env_file:
+      - ./.env.shared
       - ./services/tournament/.env
     networks:
       - transcendence-network
@@ -114,7 +113,6 @@ services:
       - transcendence-network
     volumes:
       - game-backend-db:/app
-
   skyjo_backend:
     build:
       context: ./services/skyjo_backend

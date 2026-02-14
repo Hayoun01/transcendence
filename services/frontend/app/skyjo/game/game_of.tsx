@@ -5,6 +5,7 @@ import { RoundResult, useSocket } from "../contexts/SocketContext";
 import { Trash2, Trophy, X, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { fetchUserProfile } from "../utils/fetchUserProfile";
+import { useLang } from "@/app/context/LangContext";
 
 type Card = { 
     id: string;
@@ -257,6 +258,7 @@ const ResultsPopup: React.FC<{
   results: RoundResult[];
   currentRound?: number; // Optional: to know how many rounds to display
 }> = ({ isOpen, onClose, results, currentRound }) => {
+  const { lang } = useLang()!;
   if (!isOpen) return null;
 
   // Sort results by totalScore descending for proper ranking
@@ -271,7 +273,7 @@ const ResultsPopup: React.FC<{
         
         {/* Header */}
         <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-700">
-          <h2 className="text-2xl font-bold text-white">Score</h2>
+          <h2 className="text-2xl font-bold text-white">{lang === "eng" ? "Score" : "Score"}</h2>
           <button 
             onClick={onClose} 
             className="text-gray-400 hover:text-white transition-colors"
@@ -286,14 +288,14 @@ const ResultsPopup: React.FC<{
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-600">
-                  <th className="text-left text-gray-300 font-semibold py-3 px-4">Rank</th>
-                  <th className="text-left text-gray-300 font-semibold py-3 px-4">Name</th>
+                  <th className="text-left text-gray-300 font-semibold py-3 px-4">{lang === "eng" ? "Rank" : "Rang"}</th>
+                  <th className="text-left text-gray-300 font-semibold py-3 px-4">{lang === "eng" ? "Name" : "Nom"}</th>
                   {Array.from({ length: maxRounds }, (_, i) => (
                     <th key={i} className="text-center text-gray-300 font-semibold py-3 px-4">
-                      Round {i + 1}
+                      {lang === "eng" ? "Round" : "Manche"} {i + 1}
                     </th>
                   ))}
-                  <th className="text-center text-gray-300 font-semibold py-3 px-4">Total</th>
+                  <th className="text-center text-gray-300 font-semibold py-3 px-4">{lang === "eng" ? "Total" : "Total"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -332,7 +334,7 @@ const ResultsPopup: React.FC<{
           {/* Empty state */}
           {results.length === 0 && (
             <div className="text-center py-8">
-              <div className="text-gray-400">No results available</div>
+              <div className="text-gray-400">{lang === "eng" ? "No results available" : "Aucun résultat disponible"}</div>
             </div>
           )}
         </div>
@@ -343,7 +345,7 @@ const ResultsPopup: React.FC<{
             onClick={onClose}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition-colors"
           >
-            Close
+            {lang === "eng" ? "Close" : "Fermer"}
           </button>
         </div>
       </div>
@@ -352,6 +354,7 @@ const ResultsPopup: React.FC<{
 };
 
 export default function GameOf() {
+  const { lang } = useLang()!;
   const [isProcessing, setIsProcessing] = useState(false)
   const { cardsClick, room, Allplayers, gameOvrer ,playerID, name_of_turn, click_card_in_table, click_random_card_in_table, remove_random_card_in_table, last_turn, first_hrade_cards ,all_first_hrade_cards,final_turn_Results} = useSocket();
   const [Allplayers2, setAllplayers2] = useState<playerWithCards[]>([]);
@@ -478,9 +481,9 @@ export default function GameOf() {
 
           {/* Center area */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-              {last_turn && <div className="mb-4 text-lg font-bold text-red-600 animate-pulse">Last Turn</div>}
-              {name_of_turn === name_player && all_first_hrade_cards && <div className="mb-4 text-lg font-bold text-blue-600 animate-bounce">Your Turn</div>}
-              {first_hrade_cards > 0 && <div className="mb-4 text-lg font-bold text-yellow-600 animate-pulse">First Trade Cards Left: {first_hrade_cards}</div>}
+              {last_turn && <div className="mb-4 text-lg font-bold text-red-600 animate-pulse">{lang === "eng" ? "Last Turn" : "Dernier tour"}</div>}
+              {name_of_turn === name_player && all_first_hrade_cards && <div className="mb-4 text-lg font-bold text-blue-600 animate-bounce">{lang === "eng" ? "Your Turn" : "Votre tour"}</div>}
+              {first_hrade_cards > 0 && <div className="mb-4 text-lg font-bold text-yellow-600 animate-pulse">{lang === "eng" ? "First Trade Cards Left" : "Cartes d'échange restantes"}: {first_hrade_cards}</div>}
               
               <div className="flex gap-4 items-center">
                   {room?.random_card_in_table && (
@@ -514,7 +517,7 @@ export default function GameOf() {
           {/* Turn indicator */}
           {name_of_turn && (
               <div className="absolute top-4 left-4 bg-gray-800 text-white px-4 py-2 rounded">
-                  <div className="text-sm">Current Turn:</div>
+                  <div className="text-sm">{lang === "eng" ? "Current Turn" : "Tour actuel"}:</div>
                   <div className="font-bold">{name_of_turn}</div>
               </div>
           )}

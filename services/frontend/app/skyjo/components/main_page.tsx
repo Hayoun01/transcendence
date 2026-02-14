@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { useSocket } from '../contexts/SocketContext';
 import { setCookie, getCookie } from './cookies';
 import { fetchUserProfile } from '../utils/fetchUserProfile';
+import { useLang } from "@/app/context/LangContext";
 
 export default function Lobby2() {
+  const { lang } = useLang()!;
   const { playerID, joinLobby, createRoom: socketCreateRoom, connected, rooms, joinRoom } = useSocket();
 
   const [selectedAvatar, setSelectedAvatar] = useState(0);
@@ -79,9 +81,9 @@ export default function Lobby2() {
 
             {/* Name Display */}
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-widest">Player Name</p>
+              <p className="text-xs text-gray-400 uppercase tracking-widest">{lang === "eng" ? "Player Name" : "Nom du Joueur"}</p>
               <div className="text-xl font-bold text-white drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">
-                 {userName || "Guest"}
+                 {userName || (lang === "eng" ? "Guest" : "Invité")}
               </div>
             </div>
           </div>
@@ -92,7 +94,7 @@ export default function Lobby2() {
             className="group relative px-6 py-3 bg-gray-900 text-cyan-400 border border-cyan-500/50 rounded-lg font-bold uppercase tracking-widest text-xs hover:bg-cyan-500/10 transition-all duration-200 overflow-hidden"
           >
             <span className="relative z-10 flex items-center gap-2">
-              <Plus size={16} /> Create Room
+              <Plus size={16} /> {lang === "eng" ? "Create Room" : "Créer Salle"}
             </span>
             <div className="absolute inset-0 bg-cyan-400/10 transform -skew-x-12 translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
           </button>
@@ -113,7 +115,7 @@ export default function Lobby2() {
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
               <h2 className="text-xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 flex items-center gap-3">
                 <Users className="text-cyan-400" size={20} />
-                AVAILABLE ROOMS
+                {lang === "eng" ? "AVAILABLE ROOMS" : "SALLES DISPONIBLES"}
                 <span className="bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded text-xs font-mono border border-cyan-500/30">
                   {filteredRooms.length}
                 </span>
@@ -124,7 +126,7 @@ export default function Lobby2() {
                 <input
                   suppressHydrationWarning
                   type="text"
-                  placeholder="Search rooms..."
+                  placeholder={lang === "eng" ? "Search rooms..." : "Rechercher des salles..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-black/40 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all text-sm"
@@ -140,8 +142,8 @@ export default function Lobby2() {
                 <div className="inline-block p-4 rounded-full bg-white/5 mb-4">
                    <Search size={32} className="text-gray-600" />
                 </div>
-                <p className="text-gray-400 text-sm">No rooms found</p>
-                <p className="text-gray-600 text-xs mt-1">Try creating one instead!</p>
+                <p className="text-gray-400 text-sm">{lang === "eng" ? "No rooms found" : "Aucune salle trouvée"}</p>
+                <p className="text-gray-600 text-xs mt-1">{lang === "eng" ? "Try creating one instead!" : "Essayez d'en créer une à la place !"}</p>
               </div>
             ) : (
               <div className="flex flex-col gap-2">
@@ -178,41 +180,41 @@ export default function Lobby2() {
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-purple-500 to-cyan-400"></div>
 
             <h2 className="text-2xl font-black text-white mb-6 tracking-tight flex items-center gap-2">
-              <span className="text-cyan-400">🎮</span> CREATE ROOM
+              <span className="text-cyan-400">🎮</span> {lang === "eng" ? "CREATE ROOM" : "CRÉER SALLE"}
             </h2>
             
             <div className="space-y-5">
               <div>
-                <label className="block text-gray-400 mb-2 text-xs font-bold uppercase tracking-wider">Room Name</label>
+                <label className="block text-gray-400 mb-2 text-xs font-bold uppercase tracking-wider">{lang === "eng" ? "Room Name" : "Nom de la Salle"}</label>
                 <input
                   type="text"
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value)}
-                  placeholder="Enter room name..."
+                  placeholder={lang === "eng" ? "Enter room name..." : "Entrez le nom de la salle..."}
                   className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors text-sm"
                 />
               </div>
               
               <div>
-                <label className="block text-gray-400 mb-2 text-xs font-bold uppercase tracking-wider">Password (Optional)</label>
+                <label className="block text-gray-400 mb-2 text-xs font-bold uppercase tracking-wider">{lang === "eng" ? "Password (Optional)" : "Mot de passe (Optionnel)"}</label>
                 <input
                   type="password"
                   value={newRoomPassword}
                   onChange={(e) => setNewRoomPassword(e.target.value)}
-                  placeholder="Leave empty for public..."
+                  placeholder={lang === "eng" ? "Leave empty for public..." : "Laissez vide pour public..."}
                   className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500/50 transition-colors text-sm"
                 />
               </div>
               
               <div>
-                <label className="block text-gray-400 mb-2 text-xs font-bold uppercase tracking-wider">Max Players</label>
+                <label className="block text-gray-400 mb-2 text-xs font-bold uppercase tracking-wider">{lang === "eng" ? "Max Players" : "Nombre Max de Joueurs"}</label>
                 <select
                   value={newRoomMaxPlayers}
                   onChange={(e) => setNewRoomMaxPlayers(parseInt(e.target.value))}
                   className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors text-sm appearance-none"
                 >
                   {[2,3,4,5,6,7,8].map(num => (
-                    <option key={num} value={num} className="bg-gray-900">{num} Players</option>
+                    <option key={num} value={num} className="bg-gray-900">{num} {lang === "eng" ? "Players" : "Joueurs"}</option>
                   ))}
                 </select>
               </div>
@@ -223,14 +225,14 @@ export default function Lobby2() {
                 onClick={() => setShowCreateRoom(false)}
                 className="flex-1 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-gray-400 hover:text-white hover:bg-white/5 transition-all"
               >
-                Cancel
+                {lang === "eng" ? "Cancel" : "Annuler"}
               </button>
               <button
                 onClick={createRoom}
                 disabled={!newRoomName.trim()}
                 className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white py-3 rounded-lg text-sm font-bold uppercase tracking-wider shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:shadow-none transition-all"
               >
-                Create
+                {lang === "eng" ? "Create" : "Créer"}
               </button>
             </div>
           </div>

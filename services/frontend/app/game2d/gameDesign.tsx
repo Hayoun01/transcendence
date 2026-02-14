@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { useLang } from "@/app/context/LangContext";
 
 export interface UserProfile {
   username: string;
@@ -61,6 +62,7 @@ export default function GameDesign_m({
 }: GameDesignProps) {
 
   const router = useRouter();
+  const { lang } = useLang()!;
   const [countdown, setCountdown] = useState<number | null>(null);
 
   useEffect(() => {
@@ -107,7 +109,7 @@ export default function GameDesign_m({
               className="flex items-center gap-2 px-4 py-2 border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 text-gray-300 hover:text-white rounded-lg transition-all duration-300 group"
           >
               <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span className="font-bold text-sm tracking-wide uppercase">Home</span>
+              <span className="font-bold text-sm tracking-wide uppercase">{lang === "eng" ? "Home" : "Accueil"}</span>
           </button>
       </div>
 
@@ -137,7 +139,7 @@ export default function GameDesign_m({
                  <div className="absolute top-0 left-0 w-full h-full border-4 border-cyan-500/30 rounded-full"></div>
                  <div className="absolute top-0 left-0 w-full h-full border-4 border-t-cyan-400 rounded-full animate-spin"></div>
               </div>
-              <p className="text-gray-400 text-xs">Waiting for opponent...</p>
+              <p className="text-gray-400 text-xs">{lang === "eng" ? "Waiting for opponent..." : "En attente d'un adversaire..."}</p>
             </div>
           )}
 
@@ -150,7 +152,7 @@ export default function GameDesign_m({
                   className="w-10 h-10 rounded-full border border-cyan-500 object-cover mr-3"
                 />
                 <div className="text-left">
-                  <p className="text-xs text-gray-400">Logged in as</p>
+                  <p className="text-xs text-gray-400">{lang === "eng" ? "Logged in as" : "Connecté en tant que"}</p>
                   <p className="text-cyan-400 font-bold text-sm">{myProfile.username}</p>
                 </div>
              </div>
@@ -161,7 +163,7 @@ export default function GameDesign_m({
               onClick={disconnectFromServer}
               className="mt-8 w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/50 hover:border-red-500 rounded-lg transition-all duration-300 text-sm font-bold uppercase tracking-wider"
             >
-              Cancel Matchmaking
+              {lang === "eng" ? "Cancel Matchmaking" : "Annuler l'appairage"}
             </button>
           )}
         </div>
@@ -180,12 +182,12 @@ export default function GameDesign_m({
                   <img src={myProfile?.avatarUrl} className="w-16 h-16 rounded-full border-2 border-cyan-400 relative z-10 object-cover" alt="Me" />
                 </div>
                 <div>
-                  <h3 className="text-cyan-400 font-bold text-lg">{myProfile?.username || "YOU"}</h3>
+                  <h3 className="text-cyan-400 font-bold text-lg">{myProfile?.username || (lang === "eng" ? "YOU" : "VOUS")}</h3>
                   <p className="text-4xl font-black text-white tabular-nums drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">{myScore}</p>
                 </div>
               </div>
 
-              <div className="text-gray-600 font-black text-2xl italic">VS</div>
+              <div className="text-gray-600 font-black text-2xl italic">{lang === "eng" ? "VS" : "VS"}</div>
 
               {/* Player 2 */}
               <div className="flex items-center space-x-4 flex-row-reverse space-x-reverse">
@@ -194,7 +196,7 @@ export default function GameDesign_m({
                   <img src={opponentProfile?.avatarUrl} className="w-16 h-16 rounded-full border-2 border-purple-400 relative z-10 object-cover" alt="Opp" />
                 </div>
                 <div className="text-right">
-                  <h3 className="text-purple-400 font-bold text-lg">{opponentProfile?.username || "OPPONENT"}</h3>
+                  <h3 className="text-purple-400 font-bold text-lg">{opponentProfile?.username || (lang === "eng" ? "OPPONENT" : "ADVERSAIRE")}</h3>
                   <p className="text-4xl font-black text-white tabular-nums drop-shadow-[0_0_10px_rgba(192,132,252,0.5)]">{opponentScore}</p>
                 </div>
               </div>
@@ -266,7 +268,7 @@ export default function GameDesign_m({
               {gameOver && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-30 backdrop-blur-md p-8 text-center">
                   <h2 className="text-5xl font-black text-white mb-2 uppercase tracking-tighter">
-                    Game Over
+                    {lang === "eng" ? "Game Over" : "Jeu Terminé"}
                   </h2>
                   <p className="text-xl text-cyan-300 mb-8 max-w-md">{gameOver}</p>
                   <button 
@@ -276,7 +278,7 @@ export default function GameDesign_m({
                     }}
                     className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest hover:bg-cyan-400 hover:scale-105 transition-all duration-200 rounded-none transform skew-x-[-10deg]"
                   >
-                    Return to Home
+                    {lang === "eng" ? "Return to Home" : "Retour à l'accueil"}
                   </button>
                 </div>
               )}

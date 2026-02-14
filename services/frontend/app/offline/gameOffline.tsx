@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { useLang } from "@/app/context/LangContext";
 
 // --- CONSTANTS ---
 const CANVAS_WIDTH = 800;
@@ -15,6 +16,7 @@ const COUNTDOWN_TIME = 3;
 const SCORE_W = 10;
 
 export default function GameOffline() {
+    const { lang } = useLang()!;
     // --- STATE ---
     const [leftPlayerPaddleY, setLeftPlayerPaddleY] = useState<number>(CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2);
     const [rightPlayerPaddleY, setRightPlayerPaddleY] = useState<number>(CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2);
@@ -254,7 +256,7 @@ export default function GameOffline() {
                                 onClick={startgame}
                                 className="px-8 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold uppercase tracking-widest rounded shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-all transform hover:scale-105"
                             >
-                                Start Match
+                                {lang === "eng" ? "Start Match" : "Commencer le match"}
                             </button>
                         ) : (
                             <div className="flex gap-3">
@@ -262,13 +264,13 @@ export default function GameOffline() {
                                     onClick={togglePause}
                                     className="px-6 py-2 border border-cyan-500/50 hover:bg-cyan-500/10 text-cyan-400 font-bold uppercase text-xs tracking-widest rounded transition-all"
                                 >
-                                    {isPaused ? 'Resume' : 'Pause'}
+                                    {isPaused ? (lang === "eng" ? 'Resume' : 'Reprendre') : (lang === "eng" ? 'Pause' : 'Pause')}
                                 </button>
                                 <button
                                     onClick={resetGame}
                                     className="px-6 py-2 border border-red-500/50 hover:bg-red-500/10 text-red-400 font-bold uppercase text-xs tracking-widest rounded transition-all"
                                 >
-                                    Reset
+                                    {lang === "eng" ? 'Reset' : 'Réinitialiser'}
                                 </button>
                             </div>
                         )}
@@ -276,7 +278,7 @@ export default function GameOffline() {
 
                     {/* Player 2 Score */}
                     <div className="text-center md:text-right">
-                        <div className="text-purple-400 font-bold text-sm tracking-wider mb-1">PLAYER 2</div>
+                        <div className="text-purple-400 font-bold text-sm tracking-wider mb-1">{lang === "eng" ? "PLAYER 2" : "JOUEUR 2"}</div>
                         <div className="text-4xl font-black text-white drop-shadow-[0_0_10px_rgba(192,132,252,0.5)]">
                             {rightPlayerScore}
                         </div>
@@ -356,12 +358,12 @@ export default function GameOffline() {
                                 <h2 className="text-5xl font-black text-white mb-2 uppercase tracking-tighter">
                                     {gameOver}
                                 </h2>
-                                <p className="text-cyan-300 mb-8">Press Reset to play again</p>
+                                <p className="text-cyan-300 mb-8">{lang === "eng" ? "Press Reset to play again" : "Appuyez sur Réinitialiser pour rejouer"}</p>
                                 <button 
                                     onClick={resetGame}
                                     className="px-8 py-3 bg-white text-black font-bold uppercase tracking-widest hover:bg-cyan-400 hover:scale-105 transition-all duration-200"
                                 >
-                                    Play Again
+                                    {lang === "eng" ? "Play Again" : "Rejouer"}
                                 </button>
                             </div>
                         )}
@@ -370,9 +372,9 @@ export default function GameOffline() {
 
                 {/* Instructions Footer */}
                 <div className="mt-4 text-center text-gray-500 text-xs font-mono">
-                    P1: <span className="text-cyan-400 font-bold">[W]</span> <span className="text-cyan-400 font-bold">[S]</span> • 
-                    P2: <span className="text-purple-400 font-bold">[↑]</span> <span className="text-purple-400 font-bold">[↓]</span> • 
-                    SPACE to pause
+                    {lang === "eng" ? "P1" : "J1"}: <span className="text-cyan-400 font-bold">[W]</span> <span className="text-cyan-400 font-bold">[S]</span> • 
+                    {lang === "eng" ? "P2" : "J2"}: <span className="text-purple-400 font-bold">[↑]</span> <span className="text-purple-400 font-bold">[↓]</span> • 
+                    {lang === "eng" ? "SPACE to pause" : "SPACE pour pause"}
                 </div>
 
             </div>

@@ -13,8 +13,10 @@ Lock,
 Github,
 Chrome
 } from 'lucide-react';
+import { useLang } from "@/app/context/LangContext";
 
 const LoginPage = ({ onLogin }) => {
+const { lang } = useLang()!;
 const [loginMode, setLoginMode] = useState('login'); // 'login' or 'register'
 const [loginForm, setLoginForm] = useState({
 email: '',
@@ -235,8 +237,7 @@ return (
                 type="button"
                 onClick={handleRandomAvatar}
                 className="w-full text-xs text-blue-300 hover:text-white bg-white/10 hover:bg-white/20 rounded px-2 py-1 transition-colors"
-              >
-                🎲 Random
+              >{lang === "eng" ? "Random" : "Aléatoire"}
               </button>
             </div>
           )}
@@ -248,7 +249,7 @@ return (
             type="text"
             value={loginForm.username}
             onChange={(e) => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
-            placeholder="Enter your username"
+            placeholder={lang === "eng" ? "Enter your username" : "Entrez votre nom d'utilisateur"}
             className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
           />
         </div>
@@ -258,7 +259,7 @@ return (
     {/* Full Name Field */}
     <div>
       <label className="block text-blue-200 mb-2 text-sm font-medium">
-        Full Name
+        {lang === "eng" ? "Full Name" : "Nom Complet"}
       </label>
       <div className="relative">
         <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300" size={16} />
@@ -266,6 +267,7 @@ return (
           type="text"
           value={loginForm.fullName}
           onChange={(e) => setLoginForm(prev => ({ ...prev, fullName: e.target.value }))}
+          placeholder={lang === "eng" ? "Enter your full name" : "Entrez votre nom complet"}
           placeholder="Enter your full name"
           className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
         />
@@ -277,7 +279,7 @@ return (
 {loginMode === 'login' && (
   <div>
     <label className="block text-blue-200 mb-2 text-sm font-medium">
-      Email or Username
+      {lang === "eng" ? "Email or Username" : "Email ou Nom d'Utilisateur"}
     </label>
     <div className="relative">
       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300" size={16} />
@@ -285,7 +287,7 @@ return (
         type="text"
         value={loginForm.email}
         onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
-        placeholder="Enter your email or username"
+        placeholder={lang === "eng" ? "Enter your email or username" : "Entrez votre email ou nom d'utilisateur"}
         className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
       />
     </div>
@@ -294,7 +296,7 @@ return (
 
 <div>
   <label className="block text-blue-200 mb-2 text-sm font-medium">
-    Password
+    {lang === "eng" ? "Password" : "Mot de passe"}
   </label>
   <div className="relative">
     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300" size={16} />
@@ -302,7 +304,7 @@ return (
       type={showPassword ? 'text' : 'password'}
       value={loginForm.password}
       onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-      placeholder="Enter your password"
+      placeholder={lang === "eng" ? "Enter your password" : "Entrez votre mot de passe"}
       className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
     />
     <button
@@ -318,7 +320,7 @@ return (
 {loginMode === 'register' && (
   <div>
     <label className="block text-blue-200 mb-2 text-sm font-medium">
-      Confirm Password
+      {lang === "eng" ? "Confirm Password" : "Confirmer le Mot de passe"}
     </label>
     <div className="relative">
       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300" size={16} />
@@ -326,7 +328,7 @@ return (
         type={showConfirmPassword ? 'text' : 'password'}
         value={loginForm.confirmPassword}
         onChange={(e) => setLoginForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-        placeholder="Confirm your password"
+        placeholder={lang === "eng" ? "Confirm your password" : "Confirmez votre mot de passe"}
         className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
       />
       <button
@@ -359,19 +361,19 @@ return (
   {isLoading ? (
     <div className="flex items-center justify-center gap-2">
       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-      {loginMode === 'login' ? 'Signing In...' : 'Creating Account...'}
+      {loginMode === 'login' ? (lang === "eng" ? "Signing In..." : "Connexion en cours...") : (lang === "eng" ? "Creating Account..." : "Création du compte...")}
     </div>
   ) : (
     <>
       {loginMode === 'login' ? (
         <>
           <LogIn size={16} className="inline mr-2" />
-          Sign In
+          {lang === "eng" ? "Sign In" : "Connexion"}
         </>
       ) : (
         <>
           <UserPlus size={16} className="inline mr-2" />
-          Create Account
+          {lang === "eng" ? "Create Account" : "Créer un Compte"}
         </>
       )}
     </>
@@ -386,7 +388,7 @@ return (
     <div className="w-full border-t border-white/30"></div>
   </div>
   <div className="relative flex justify-center text-sm">
-    <span className="px-2 bg-white/10 text-blue-200 rounded">Or continue with</span>
+    <span className="px-2 bg-white/10 text-blue-200 rounded">{lang === "eng" ? "Or continue with" : "Ou continuer avec"}</span>
   </div>
 </div>
 
@@ -416,36 +418,36 @@ return (
 {loginMode === 'login' && (
 <div className="mt-4 text-center">
   <button className="text-blue-300 hover:text-blue-200 text-sm transition-colors">
-    Forgot Password?
+    {lang === "eng" ? "Forgot Password?" : "Mot de passe oublié ?"}
   </button>
 </div>
 )}
 
 <div className="mt-6 text-center">
 <p className="text-blue-200 text-sm">
-  {loginMode === 'login' ? "Don't have an account? " : "Already have an account? "}
+  {loginMode === 'login' ? (lang === "eng" ? "Don't have an account? " : "Vous n'avez pas de compte ? ") : (lang === "eng" ? "Already have an account? " : "Vous avez déjà un compte ? ")}
   <button
     onClick={switchMode}
     className="text-white font-semibold hover:underline transition-all duration-200"
   >
-    {loginMode === 'login' ? 'Register here' : 'Login here'}
+    {loginMode === 'login' ? (lang === "eng" ? "Register here" : "Inscrivez-vous ici") : (lang === "eng" ? "Login here" : "Connectez-vous ici")}
   </button>
 </p>
 </div>
 
 {/* Demo Credentials */}
 <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
-<p className="text-blue-200 text-xs text-center mb-2">Demo Credentials:</p>
+<p className="text-blue-200 text-xs text-center mb-2">{lang === "eng" ? "Demo Credentials:" : "Identifiants de Démo :"}</p>
 <p className="text-white text-xs text-center">Email: zbakkas@example.com</p>
 <p className="text-white text-xs text-center">Password: password</p>
-<p className="text-blue-200 text-xs text-center mt-1">(or register with any email)</p>
+<p className="text-blue-200 text-xs text-center mt-1">{lang === "eng" ? "(or register with any email)" : "(ou inscrivez-vous avec n'importe quel email)"}</p>
 </div>
 </div>
 
 {/* Footer */}
 <div className="text-center mt-8">
 <p className="text-blue-300 text-sm">
-© 2025 Skyjo Online. Play responsibly.
+© 2025 Skyjo Online. {lang === "eng" ? "Play responsibly." : "Jouez de manière responsable."}
 </p>
 </div>
 </div>
