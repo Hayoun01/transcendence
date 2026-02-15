@@ -172,8 +172,6 @@ services:
       - monitoring-network
     volumes:
       - prometheus-data:/prometheus
-    ports:
-     - "9090:9090"
   grafana:
     depends_on:
       - prometheus
@@ -185,8 +183,6 @@ services:
         - admin_password
     networks:
       - monitoring-network
-    ports:
-      - "6969:6969"
   node_exporter:
     image: quay.io/prometheus/node-exporter:latest
     container_name: node_exporter
@@ -220,12 +216,15 @@ services:
       - "80:80"
       - "443:443"
       - "3000:3000"
+      - "9090:9090"
+      - "6969:6969"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
     networks:
       - transcendence-network
+      - monitoring-network
 
 networks:
   transcendence-network:

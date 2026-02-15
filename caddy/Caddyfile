@@ -5,3 +5,11 @@ localhost {
 localhost:3000 {
   reverse_proxy api_gateway:3000
 }
+
+localhost:6969 {
+  reverse_proxy grafana:6969
+}
+
+localhost:9090 {
+  reverse_proxy prometheus:9090
+}
