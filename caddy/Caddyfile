@@ -11,5 +11,8 @@ localhost:6969 {
 }
 
 localhost:9090 {
+  basic_auth / {
+    aghzal $2a$12$5CBQXJKCyTlTAHPgXHW65.bqpjHvZZjmz/M6nwpi90SDW9tto6T1y
+  }
   reverse_proxy prometheus:9090
 }
