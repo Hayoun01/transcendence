@@ -142,8 +142,6 @@ services:
     container_name: redis
     networks:
       - transcendence-network
-    ports:
-      - "6379:6379"
     volumes:
       - redis-data:/data
   rabbit:
@@ -154,9 +152,6 @@ services:
       interval: 5s
       timeout: 10s
       retries: 10
-    ports:
-      - "5672:5672"
-      - "15672:15672"
     networks:
       - transcendence-network
     volumes:
