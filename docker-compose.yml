@@ -4,8 +4,6 @@ services:
       context: ./services/frontend
       dockerfile: Dockerfile
     container_name: frontend
-    ports:
-      - "5000:5000"
     env_file:
       - ./services/frontend/.env
     networks:
@@ -27,8 +25,6 @@ services:
       - skyjo_backend
     env_file:
       - ./.env.shared
-    ports:
-      - "3000:3000"
     networks:
       - transcendence-network
     volumes:
@@ -43,6 +39,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    environment:
+      - NODE_ENV=production
     env_file:
       - ./.env.shared
       - ./services/auth/.env
@@ -214,6 +212,20 @@ services:
     networks:
       - monitoring-network
     restart: unless-stopped
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "3000:3000"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - transcendence-network
 
 networks:
   transcendence-network:
@@ -255,6 +267,10 @@ volumes:
     name: uploads-data
     driver: local
   prometheus-data:
+    driver: local
+  caddy-data:
+    driver: local
+  caddy-config:
     driver: local
 
 secrets:

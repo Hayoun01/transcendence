@@ -32,7 +32,7 @@ const notifyFriendsOfPresence = async (userId, status) => {
             userId,
             status,
           },
-        })
+        }),
       );
     }
   }
@@ -41,7 +41,7 @@ const notifyFriendsOfPresence = async (userId, status) => {
 const notifyUserOfPresence = async (socket) => {
   const friends = await redis.smembers(`notification:friends:${socket.userId}`);
   const onlineFriends = friends.filter(
-    (id) => users.has(id) && users.get(id).size > 0
+    (id) => users.has(id) && users.get(id).size > 0,
   );
   const nonBlocking = await Promise.all(
     onlineFriends.map(async (id) => ({
@@ -49,7 +49,7 @@ const notifyUserOfPresence = async (socket) => {
       blocked:
         (await isUserBlocked(socket.userId, id)) ||
         (await isUserBlocked(id, socket.userId)),
-    }))
+    })),
   );
   socket.send(
     JSON.stringify({
@@ -57,15 +57,15 @@ const notifyUserOfPresence = async (socket) => {
       payload: {
         onlineFriends: nonBlocking.filter((f) => !f.blocked).map((f) => f.id),
       },
-    })
+    }),
   );
 };
 
 export const notifyPresenceChange = async (
   { requesterId: blockerId, receiverId: blockedId },
-  status = "offline"
+  status = "offline",
 ) => {
-  if (users.has(blockedId)) {
+  if (users.has(blockedId) && users.has(blockerId)) {
     const blocked = users.get(blockedId);
     for (const socket of blocked) {
       socket.send(
@@ -75,21 +75,20 @@ export const notifyPresenceChange = async (
             userId: blockerId,
             status,
           },
-        })
+        }),
       );
     }
-  }
-  if (users.has(blockerId)) {
-    const blocked = users.get(blockerId);
-    for (const socket of blocked) {
+    const blocker = users.get(blockerId);
+    for (const socket of blocker) {
       socket.send(
         JSON.stringify({
           type: "presence",
+          tada: "...",
           payload: {
             userId: blockedId,
             status,
           },
-        })
+        }),
       );
     }
   }
@@ -136,11 +135,11 @@ export default (fastify) => {
   fastify.get("/notifications", notificationControllers.getUserNotifications);
   fastify.patch(
     "/notifications/:notificationId/read",
-    notificationControllers.markNotificationAsRead
+    notificationControllers.markNotificationAsRead,
   );
   fastify.post(
     "/notifications/read_all",
-    notificationControllers.readAllNotifications
+    notificationControllers.readAllNotifications,
   );
 };
 

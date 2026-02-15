@@ -25,5 +25,6 @@ export const environ = {
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:3000",
   USER_MGMT_SERVICE_URL: process.env.USER_MGMT_SERVICE_URL,
   API_GATEWAY_URL: process.env.API_GATEWAY_URL || "http://localhost:3000",
+  DOMAIN: process.env.DOMAIN || "http://localhost",
   LOG_DIR: process.env.LOG_DIR || "../logs",
 };

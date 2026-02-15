@@ -1,12 +1,11 @@
 import z from "zod";
 import { authControllers } from "../controllers/auth.controllers.js";
 import { prisma } from "../db/prisma.js";
-import { authService } from "../services/auth.services.js";
 import otpServices from "../services/otp.services.js";
-import { hashPassword } from "../utils/bcrypt.js";
-import { sendError, sendSuccess } from "../utils/fastify.js";
 import { getQueue, QueueType } from "../services/queue.services.js";
+import { hashPassword } from "../utils/bcrypt.js";
 import { environ } from "../utils/environ.js";
+import { sendError, sendSuccess } from "../utils/fastify.js";
 
 /**
  * @type {import('fastify').FastifyPluginCallback}
@@ -22,7 +21,7 @@ export default (fastify, opts, done) => {
       //     },
       // })],
     },
-    authControllers.loginUser(fastify)
+    authControllers.loginUser(fastify),
   );
   fastify.post("/logout", async (request, reply) => {
     const refreshToken =
@@ -46,8 +45,20 @@ export default (fastify, opts, done) => {
         });
       }
     }
-    reply.clearCookie("token", { path: "/" });
-    reply.clearCookie("refreshToken", { path: "/" });
+    reply.clearCookie("token", {
+      path: "/",
+      secure: environ.NODE_ENV === "production",
+      sameSite: "none",
+      domain: environ.DOMAIN,
+      httpOnly: true,
+    });
+    reply.clearCookie("refreshToken", {
+      path: "/",
+      secure: environ.NODE_ENV === "production",
+      sameSite: "none",
+      domain: environ.DOMAIN,
+      httpOnly: true,
+    });
     return;
   });
 
@@ -87,7 +98,7 @@ export default (fastify, opts, done) => {
             userId: user.id,
             type: "email_verification",
           },
-          { expiresIn: "15m" }
+          { expiresIn: "15m" },
         );
         await prisma.outBox.create({
           data: {
@@ -101,7 +112,7 @@ export default (fastify, opts, done) => {
         });
       }
       return sendSuccess(reply, 200, "EMAIL_VERIFICATION_SENT_IF_ASSOCIATED");
-    }
+    },
   );
 
   const otpVerifySchema = z.object({
@@ -125,7 +136,7 @@ export default (fastify, opts, done) => {
     } catch (err) {
       fastify.log.warn(
         { sessionToken },
-        `A suspicious attempt to validate otp using invalid sessionToken`
+        `A suspicious attempt to validate otp using invalid sessionToken`,
       );
       return sendError(reply, 401, "Invalid or expired session token");
     }
@@ -160,7 +171,7 @@ export default (fastify, opts, done) => {
     } catch (err) {
       fastify.log.warn(
         { reqId: request.id, sessionToken },
-        `A suspicious attempt to validate otp using invalid sessionToken`
+        `A suspicious attempt to validate otp using invalid sessionToken`,
       );
       return sendError(reply, 401, "Invalid or expired session token");
     }
@@ -187,11 +198,11 @@ export default (fastify, opts, done) => {
         Buffer.from(
           JSON.stringify({
             userId,
-          })
+          }),
         ),
         {
           persistent: true,
-        }
+        },
       );
     }
     return sendSuccess(reply, 200, "OTP verified successfully");
@@ -214,7 +225,7 @@ export default (fastify, opts, done) => {
         prisma,
         user.id,
         "password_reset",
-        60
+        60,
       );
       await getQueue(QueueType.EMAIL).add("password-reset", {
         email: user.email,
@@ -241,7 +252,7 @@ export default (fastify, opts, done) => {
     const { valid, reason } = await otpServices.verifyOTP(
       userId,
       "password_reset",
-      token
+      token,
     );
     if (!valid) return sendError(reply, 400, reason);
 

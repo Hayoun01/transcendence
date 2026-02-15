@@ -1,19 +1,13 @@
+import { prisma } from "../db/prisma.js";
 import {
   loginUserSchema,
-  refreshTokenSchema,
   registerUserSchema,
 } from "../schemas/auth.schemas.js";
-import { z } from "zod";
-import { v4 as uuid } from "uuid";
-import { hashCompare, hashPassword } from "../utils/bcrypt.js";
-import { prisma } from "../db/prisma.js";
 import { authService } from "../services/auth.services.js";
+import { hashCompare, hashPassword } from "../utils/bcrypt.js";
+import { environ } from "../utils/environ.js";
 import { requestToHeaders, sendError, sendSuccess } from "../utils/fastify.js";
 import { postInternal } from "../utils/internalClient.js";
-import otpServices from "../services/otp.services.js";
-import mailer from "../utils/mailer.js";
-import { getQueue, QueueType } from "../services/queue.services.js";
-import { environ } from "../utils/environ.js";
 
 /**
  *
@@ -35,7 +29,7 @@ const registerUser = (fastify) => async (request, reply) => {
     postInternal(
       `${environ.USER_MGMT_SERVICE_URL}/internal/username-available`,
       { username },
-      requestToHeaders(request)
+      requestToHeaders(request),
     ),
   ]);
 
@@ -62,7 +56,7 @@ const registerUser = (fastify) => async (request, reply) => {
         userId: createdUser.id,
         type: "email_verification",
       },
-      { expiresIn: "15m" }
+      { expiresIn: "15m" },
     );
     await tx.outBox.create({
       data: {
@@ -82,7 +76,7 @@ const registerUser = (fastify) => async (request, reply) => {
     reply,
     201,
     "Registration successful. Verification email will be sent shortly.",
-    { sessionToken }
+    { sessionToken },
   );
 };
 
@@ -121,12 +115,12 @@ const loginUser = (fastify) => async (request, reply) => {
       reply,
       401,
       "You must verify your account, check your inbox!",
-      { status: "email_validation_required" }
+      { status: "email_validation_required" },
     );
   if (user.TwoFactorAuth.length > 0) {
     const sessionToken = fastify.jwt.sign(
       { userId: user.id, stat: "awaiting_2fa" },
-      { expiresIn: "4m" }
+      { expiresIn: "4m" },
     );
     return sendError(reply, 401, "Please enter your 2FA code.", {
       status: "2fa_required",
@@ -136,22 +130,25 @@ const loginUser = (fastify) => async (request, reply) => {
   const { accessToken, refreshToken } = await authService.newUserSession(
     fastify,
     request,
-    user.id
+    user.id,
   );
   reply.setCookie("token", accessToken, {
     path: "/",
     secure: environ.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "none",
     maxAge: 60 * 60 * 2,
     signed: true,
+    domain: environ.DOMAIN,
     httpOnly: true,
   });
+  console.log(environ.NODE_ENV);
   reply.setCookie("refreshToken", refreshToken, {
     path: "/",
     secure: environ.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "none",
     maxAge: 60 * 60 * 24 * 7,
     signed: true,
+    domain: environ.DOMAIN,
     httpOnly: true,
   });
   return;
@@ -194,22 +191,24 @@ const refreshToken = (fastify) => async (request, reply) => {
   const userSession = await authService.newUserSession(
     fastify,
     request,
-    session.userId
+    session.userId,
   );
   reply.setCookie("token", userSession.accessToken, {
     path: "/",
     secure: environ.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "none",
     maxAge: 60 * 60 * 2,
     signed: true,
+    domain: environ.DOMAIN,
     httpOnly: true,
   });
   reply.setCookie("refreshToken", userSession.refreshToken, {
     path: "/",
     secure: environ.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "none",
     maxAge: 60 * 60 * 24 * 7,
     signed: true,
+    domain: environ.DOMAIN,
     httpOnly: true,
   });
   return;

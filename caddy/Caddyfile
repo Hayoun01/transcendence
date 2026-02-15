@@ -1,0 +1,7 @@
+localhost {
+  reverse_proxy frontend:5000
+}
+
+localhost:3000 {
+  reverse_proxy api_gateway:3000
+}

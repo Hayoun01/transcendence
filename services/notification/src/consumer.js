@@ -117,7 +117,10 @@ async function consumer() {
                 },
               });
               broadcastToUser(parsedMsg.userId, formatted);
-              await addFriendshipToCache({receiverId: parsedMsg.userId, requesterId: parsedMsg.fromUser});
+              await addFriendshipToCache({
+                receiverId: parsedMsg.userId,
+                requesterId: parsedMsg.fromUser,
+              });
               break;
             case "friendship.unblocked":
               removeUserFromBlockSet(parsedMsg);
@@ -166,11 +169,11 @@ async function consumer() {
         channel.ack(msg);
       }
     },
-    { noAck: false }
+    { noAck: false },
   );
 
   console.log(
-    `[*] Waiting for messages in queue '${queue}'. To exit press CTRL+C`
+    `[*] Waiting for messages in queue '${queue}'. To exit press CTRL+C`,
   );
 
   const closeGracefully = async () => {
