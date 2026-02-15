@@ -10,6 +10,8 @@ services:
       - transcendence-network
     depends_on:
       - api_gateway
+    volumes:
+      - logs-volume:/usr/src/logs
   api_gateway:
     build:
       context: ./services/api_gateway

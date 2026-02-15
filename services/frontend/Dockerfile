@@ -13,4 +13,4 @@ EXPOSE 5000
 ENV PORT=5000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["npm", "run", "start"]
+CMD ["sh", "-c", "npm run start 2>&1 | tee -a /usr/src/logs/frontend.log"]
