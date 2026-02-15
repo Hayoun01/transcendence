@@ -6,7 +6,7 @@ GRAFANA_PID=$!
 
 ADMIN_PASSWORD=$(cat /run/secrets/admin_password)
 GRAFANA_URL="http://localhost:6969"
-ADMIN_USER="aghzal"
+ADMIN_USER="trans"
 
 
 DASHBOARDS_DIR="/dashboards"
