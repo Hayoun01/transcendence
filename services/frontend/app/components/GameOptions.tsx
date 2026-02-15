@@ -335,14 +335,14 @@ export default async function GameOptions(): Promise<ReactElement<any, any>> {
                           </Link>
                         </div>
                       ) : isLogged || !mode.mustBeLogged ? (
+                        <Link href={mode.links[0]} className="w-full flex items-center justify-center gap-3">
                         <button
                           className="w-full text-black py-3 px-6 rounded-lg font-black text-lg tracking-[0.1em] flex items-center justify-center gap-3 border-white bg-white transition-all duration-200 hover:bg-gray-100 border-2 shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:shadow-[0_0_25px_rgba(255,255,255,0.5)]"
                         >
-                        <Link href={mode.links[0]} className="w-full flex items-center justify-center gap-3">
                           <Play className="w-5 h-5" />
                           {mode.actionButtons[0]}
-                        </Link>
                         </button>
+                        </Link>
                       ) : (
                         <button
                           className="w-full text-black py-3 px-6 rounded-lg font-black text-lg tracking-[0.1em] flex items-center justify-center gap-3 border-white bg-gray-600 cursor-not-allowed"
