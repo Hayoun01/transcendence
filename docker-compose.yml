@@ -152,8 +152,8 @@ services:
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "status"]
       interval: 5s
-      timeout: 10s
-      retries: 10
+      timeout: 5s
+      retries: 50
     networks:
       - transcendence-network
     volumes:
@@ -222,60 +222,6 @@ services:
     networks:
       - transcendence-network
       - monitoring-network
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
-    container_name: elasticsearch
-    environment:
-      - node.name=es01
-      - discovery.type=single-node
-      - bootstrap.memory_lock=true
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-    ulimits:
-      memlock: { soft: -1, hard: -1 }
-    volumes:
-      - es-data:/usr/share/elasticsearch/data
-    ports:
-      - "9200:9200"
-    networks:
-      - elk-network
-  logstash:
-    image: docker.elastic.co/logstash/logstash:8.17.0
-    container_name: logstash
-    environment:
-      - "LS_JAVA_OPTS=-Xms512m -Xmx512m"
-    volumes:
-      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
-    ports:
-      - "5044:5044"
-    networks:
-      - elk-network
-    depends_on:
-      - elasticsearch
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.17.0
-    container_name: kibana
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    ports:
-      - "5601:5601"
-    networks:
-      - elk-network
-    depends_on:
-      - elasticsearch
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:8.17.0
-    container_name: filebeat
-    user: root
-    volumes:
-      - logs-volume:/var/log/fastify:ro
-      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-    networks:
-      - elk-network
-    depends_on:
-      - logstash
-    command: >
-      filebeat -e -c /usr/share/filebeat/filebeat.yml --strict.perms=false
 
 networks:
   transcendence-network:
