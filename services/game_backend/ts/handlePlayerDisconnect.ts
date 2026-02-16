@@ -18,6 +18,7 @@ import {
   waitingPlayers,
   waitingPlayers2vs2,
   waitingPlayers3d,
+  playersInGame,
   COUNTDOWN_TIME
 } from './types';
 
@@ -25,6 +26,9 @@ import { fastify } from '../server';
 
 export const handlePlayerDisconnect = (playerId: string) => {
   console.log(`Player ${playerId} disconnecting...`);
+
+  // Mark player as no longer busy
+  playersInGame.delete(playerId);
   
   // Remove from waiting list if present
   const waitingIndex = waitingPlayers.findIndex(p => p.playerId === playerId);
