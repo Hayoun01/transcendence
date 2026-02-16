@@ -4,13 +4,19 @@ import path from 'path';
 
 // Database instance
 let db: Database | null = null;
-const dbPath = path.join(__dirname, '..', 'game_results.db');
+const dataDir = path.join(process.cwd(), 'data');
+const dbPath = path.join(dataDir, 'game_results.db');
 
 // Initialize SQLite database
 const initDatabase = async (): Promise<Database> => {
   if (db) return db;
 
   const SQL = await initSqlJs();
+  
+  // Ensure data directory exists
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
   
   // Try to load existing database
   if (fs.existsSync(dbPath)) {

@@ -70,6 +70,7 @@ export interface GameRoom {
 
 // Global state - you can import and use these anywhere
 export const gameRooms = new Map<string, GameRoom>();
+export const playersInGame = new Set<string>();
 export const waitingPlayers: Array<{ playerId: string; socket: any }> = [];
 export const waitingPlayers2vs2: Array<{ playerId: string; socket: any }> = [];
 export const waitingPlayers3d: Array<{ playerId: string; socket: any }> = [];

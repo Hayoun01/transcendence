@@ -13,6 +13,7 @@ import {
   c_WIN,
   PADDLE_SPEED,
   waitingPlayers,
+  playersInGame,
   COUNTDOWN_TIME
 } from './types';
 import { saveGameResult } from './database';
@@ -105,6 +106,7 @@ export const updateGameState = (room: GameRoom ,fastify :FastifyInstance) => {
       });
 
       room.players.forEach(player => {
+        playersInGame.delete(player.id);
         player.socket.send(JSON.stringify({
           type: 'gameOver',
           message: `Game over! You are ${player.score >= c_WIN ? 'the winner!' : 'the loser.'}`,
@@ -233,6 +235,7 @@ export const updateGameState_2vs2 = (room: GameRoom) => {
       });
 
       room.players.forEach(player => {
+        playersInGame.delete(player.id);
         player.socket.send(JSON.stringify({
           type: 'gameOver',
           message: `Game over! You are ${player.score >= c_WIN ? 'the winner!' : 'the loser.'}`,

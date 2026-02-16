@@ -112,7 +112,7 @@ services:
     networks:
       - transcendence-network
     volumes:
-      - game-backend-db:/app
+      - game-backend-db:/app/data
   skyjo_backend:
     build:
       context: ./services/skyjo_backend
@@ -122,7 +122,7 @@ services:
     networks:
       - transcendence-network
     volumes:
-      - skyjo-backend-db:/app
+      - skyjo-backend-db:/app/data
   notification:
     build:
       context: ./services/notification
