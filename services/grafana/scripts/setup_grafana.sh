@@ -5,8 +5,9 @@ grafana server --homepath=/usr/share/grafana --config=/etc/grafana/grafana.ini >
 GRAFANA_PID=$!
 
 ADMIN_PASSWORD=$(cat /run/secrets/admin_password)
-GRAFANA_URL="https://localhost:6969"
-ADMIN_USER="aghzal"
+GRAFANA_URL="http://localhost:6969"
+ADMIN_USER="trans"
+
 
 DASHBOARDS_DIR="/dashboards"
 DATASOURCES_DIR="/datasources"

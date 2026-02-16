@@ -10,6 +10,8 @@ services:
       - transcendence-network
     depends_on:
       - api_gateway
+    volumes:
+      - logs-volume:/usr/src/logs
   api_gateway:
     build:
       context: ./services/api_gateway
@@ -142,8 +144,6 @@ services:
     container_name: redis
     networks:
       - transcendence-network
-    ports:
-      - "6379:6379"
     volumes:
       - redis-data:/data
   rabbit:
@@ -154,9 +154,6 @@ services:
       interval: 5s
       timeout: 10s
       retries: 10
-    ports:
-      - "5672:5672"
-      - "15672:15672"
     networks:
       - transcendence-network
     volumes:
@@ -172,8 +169,6 @@ services:
       - monitoring-network
     volumes:
       - prometheus-data:/prometheus
-    ports:
-     - "9090:9090"
   grafana:
     depends_on:
       - prometheus
@@ -185,8 +180,6 @@ services:
         - admin_password
     networks:
       - monitoring-network
-    ports:
-      - "6969:6969"
   node_exporter:
     image: quay.io/prometheus/node-exporter:latest
     container_name: node_exporter
@@ -220,12 +213,15 @@ services:
       - "80:80"
       - "443:443"
       - "3000:3000"
+      - "9090:9090"
+      - "6969:6969"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
     networks:
       - transcendence-network
+      - monitoring-network
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
     container_name: elasticsearch
