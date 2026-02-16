@@ -424,6 +424,7 @@ services:
     networks:
       - transcendence-network
       - monitoring-network
+      - elk-network
     depends_on:
       - frontend
       - api_gateway
@@ -453,9 +454,9 @@ services:
     networks:
       - transcendence-network
       - monitoring-network
+      - elk-network
     depends_on:
       - waf
-      - elk-network
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
     container_name: elasticsearch

@@ -55,6 +55,7 @@ map $http_upgrade $connection_upgrade {
 map $http_host $backend {
     "localhost:6969" "grafana:6969";
     "localhost:9090" "prometheus:9090";
+    "localhost:5601" "kibana:5601";
     "localhost:3000" "api_gateway:3000";
     default "frontend:5000";
 }
