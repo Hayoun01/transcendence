@@ -16,3 +16,7 @@ localhost:9090 {
   }
   reverse_proxy prometheus:9090
 }
+
+localhost:5601 {
+  reverse_proxy kibana:5601
+}

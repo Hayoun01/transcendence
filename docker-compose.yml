@@ -190,7 +190,7 @@ services:
     pid: host
     restart: unless-stopped
     volumes:
-      - '/:/host:ro,rslave'
+      - '/:/host:ro'
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
@@ -213,6 +213,7 @@ services:
       - "80:80"
       - "443:443"
       - "3000:3000"
+      - "5601:5601"
       - "9090:9090"
       - "6969:6969"
     volumes:
@@ -222,6 +223,82 @@ services:
     networks:
       - transcendence-network
       - monitoring-network
+      - elk-network
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=123456
+    healthcheck:
+      test: curl -s http://localhost:9200 >/dev/null || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 50
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    networks:
+      - elk-network
+  
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.17.0
+    container_name: logstash
+    environment:
+      - "LS_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTIC_PASSWORD=123456
+    volumes:
+      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    networks:
+      - elk-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+  
+  setupelastic:
+    container_name: setupelastic
+    image: curlimages/curl:latest
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: 'curl -X POST http://elasticsearch:9200/_security/user/kibana_system/_password -H "Content-Type: application/json" -d "{\"password\": \"123456\"}" -u elastic:123456'
+    networks:
+      - elk-network
+  
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.0
+    container_name: kibana
+    volumes:
+      - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    environment:
+      - KIBANA_USERNAME=kibana_system
+      - KIBANA_PASSWORD=123456
+      - KIBANA_ENCRYPTION_KEY=uhduiha89hd8uhduiha89hd8uhduiha8
+      - KIBANA_OBJ_ENCRYPTION_KEY=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
+    networks:
+      - elk-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.17.0
+    container_name: filebeat
+    user: root
+    volumes:
+      - logs-volume:/var/log/fastify:ro
+      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+    networks:
+      - elk-network
+    depends_on: 
+      - logstash
+    command: >
+      filebeat -e -c /usr/share/filebeat/filebeat.yml --strict.perms=false
 
 networks:
   transcendence-network:
