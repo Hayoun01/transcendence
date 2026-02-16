@@ -299,6 +299,9 @@ export default function MultiplayerPongGame_2D() {
       gameOver={gameOver}
       myProfile={myProfile}
       opponentProfile={opponentProfile}
+      tournamentId={get_tournamentId}
+      isPrivate={get_privatee === 'true'}
+      inviterId={get_playerinvitID}
     />
   );
 }
