@@ -41,7 +41,7 @@ SecRule REQUEST_METHOD "^(?:GET|HEAD|POST|OPTIONS|PUT|PATCH|DELETE)$" \
     nolog,\
     ctl:ruleRemoveById=911100"
 
-SecRule REQUEST_HEADERS:Host "@rx ^localhost:(6969|9090|5601)$" \
+SecRule REQUEST_HEADERS:Host "@rx ^localhost:(6969|9090|5601|8200)$" \
     "id:900300,\
     phase:1,\
     pass,\
@@ -64,6 +64,7 @@ map $http_host $backend {
     "localhost:6969" "grafana:6969";
     "localhost:9090" "prometheus:9090";
     "localhost:5601" "kibana:5601";
+    "localhost:8200" "ft_transcendence_vault:8200";
     "localhost:3000" "api_gateway:3000";
     default "frontend:5000";
 }
