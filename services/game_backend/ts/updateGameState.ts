@@ -32,8 +32,12 @@ export const updateGameState = (room: GameRoom ,fastify :FastifyInstance) => {
   gameState.ballY += gameState.ballVelocityY;
 
   // Ball collision with top and bottom walls
-  if (gameState.ballY <= 0 || gameState.ballY >= CANVAS_HEIGHT - BALL_SIZE) {
-    gameState.ballVelocityY = -gameState.ballVelocityY;
+  if (gameState.ballY <= 0) {
+    gameState.ballY = 0;
+    gameState.ballVelocityY = Math.abs(gameState.ballVelocityY);
+  } else if (gameState.ballY >= CANVAS_HEIGHT - BALL_SIZE) {
+    gameState.ballY = CANVAS_HEIGHT - BALL_SIZE;
+    gameState.ballVelocityY = -Math.abs(gameState.ballVelocityY);
   }
 
   const players = Array.from(gameState.players.values());
@@ -174,8 +178,12 @@ export const updateGameState_2vs2 = (room: GameRoom) => {
   gameState.ballY += gameState.ballVelocityY;
 
   // Ball collision with top and bottom walls
-  if (gameState.ballY <= 0 || gameState.ballY >= CANVAS_HEIGHT - BALL_SIZE) {
-    gameState.ballVelocityY = -gameState.ballVelocityY;
+  if (gameState.ballY <= 0) {
+    gameState.ballY = 0;
+    gameState.ballVelocityY = Math.abs(gameState.ballVelocityY);
+  } else if (gameState.ballY >= CANVAS_HEIGHT - BALL_SIZE) {
+    gameState.ballY = CANVAS_HEIGHT - BALL_SIZE;
+    gameState.ballVelocityY = -Math.abs(gameState.ballVelocityY);
   }
 
   const players = Array.from(gameState.players.values());
