@@ -372,11 +372,16 @@ const handlePaddleMove_3D = (playerId: string, direction: number) => {
   if (!playerRoom || !player) return;
 
   // 🔧 FIX: Actually update the player's paddle position
-  player.paddleY_3d = direction;
+  // If player 2, un-mirror the direction before saving
+  if (player.playerIndex === 1) {
+    player.paddleY_3d = -direction - 57;
+  } else {
+    player.paddleY_3d = direction;
+  }
   
   // Also update in the gameState players map if it exists there
   if (playerRoom.gameState.players.has(playerId)) {
-    playerRoom.gameState.players.get(playerId)!.paddleY_3d = direction;
+    playerRoom.gameState.players.get(playerId)!.paddleY_3d = player.paddleY_3d;
   }
 
   // console.log(`Player ${playerId} moved paddle to position: ${direction}`);
@@ -526,7 +531,7 @@ const checkServerPaddleCollisions = (room: GameRoom) => {
   const player2 = players.find(p => p.playerIndex === 1); // Left paddle
 
   // Player 1 paddle collision (right side)
-  if (player1 && ball.x > 55 && ball.x < 65 && 
+  if (player1 && ball.x > 55 && 
       Math.abs(ball.z - player1.paddleY_3d) < 8 && 
       Math.abs(ball.y - 50) < 16 && // paddle height
       ball.velocityX > 0) {
@@ -540,7 +545,7 @@ const checkServerPaddleCollisions = (room: GameRoom) => {
   }
 
   // Player 2 paddle collision (left side)
-  if (player2 && ball.x > -65 && ball.x < -55 && 
+  if (player2 && ball.x < -55 && 
       Math.abs(ball.z - player2.paddleY_3d) < 8 && 
       Math.abs(ball.y - 50) < 16 &&
       ball.velocityX < 0) {
@@ -610,18 +615,26 @@ export const broadcastGameState_3D = (room: GameRoom) => {
         gameState: {
           ballX: ballX || 0,
           ballY: room.gameState.ballState?.y || 0,
-          ballZ: room.gameState.ballState?.z || 0,
-          ballVelocityX: room.gameState.ballState?.velocityX || 0,
+          ballZ: ballZ || 0,
+          ballVelocityX: ballVelocityX || 0,
           ballVelocityY: room.gameState.ballState?.velocityY || 0,
-          ballVelocityZ: room.gameState.ballState?.velocityZ || 0,
+          ballVelocityZ: ballVelocityZ || 0,
           gameRunning: room.gameState.gameRunning,
-          players: Array.from(room.gameState.players.values()).map(p => ({
-            id: p.id,
-            paddleY: p.paddleY_3d,
-            score: p.score,
-            playerIndex: p.playerIndex
-          })),
-
+          players: Array.from(room.gameState.players.values()).map(p => {
+            const isMe = p.id === player.id;
+            // Mirror paddle position for the player receiving it if they are player 2
+            let paddleY = p.paddleY_3d;
+            if (isPlayer2) {
+              // Formula: -Z - 57
+              paddleY = -(p.paddleY_3d || 0) - 57;
+            }
+            return {
+              id: p.id,
+              paddleY: paddleY,
+              score: p.score,
+              playerIndex: p.playerIndex
+            };
+          }),
         },
         yourPlayerIndex: player.playerIndex
       };

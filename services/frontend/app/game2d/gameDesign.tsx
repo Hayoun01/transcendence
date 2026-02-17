@@ -244,7 +244,7 @@ export default function GameDesign_m({
 
               {/* PADDLE 1 (Cyan) */}
               <div
-                className="absolute bg-cyan-400 rounded-r-md shadow-[0_0_15px_rgba(34,211,238,0.6)]"
+                className="absolute bg-cyan-400 rounded-r-md shadow-[0_0_15px_rgba(34,211,238,0.6)] z-20"
                 style={{
                   left: 0,
                   top: P_me_paddleY,
@@ -256,7 +256,7 @@ export default function GameDesign_m({
 
               {/* PADDLE 2 (Purple) */}
               <div
-                className="absolute bg-purple-500 rounded-l-md shadow-[0_0_15px_rgba(168,85,247,0.6)]"
+                className="absolute bg-purple-500 rounded-l-md shadow-[0_0_15px_rgba(168,85,247,0.6)] z-20"
                 style={{
                   left: CANVAS_WIDTH - PADDLE_WIDTH,
                   top: P_2_paddleY,

@@ -9,7 +9,7 @@ export const BALL_SIZE = 16;
 export const BALL_SPEED = 8;
 export const c_WIN = 7;
 export const COUNTDOWN_TIME = 5;
-export const PADDLE_SPEED = 7;
+export const PADDLE_SPEED = 15;
 
 // Interfaces
 export interface Player {

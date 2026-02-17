@@ -42,25 +42,35 @@ export const updateGameState = (room: GameRoom ,fastify :FastifyInstance) => {
 
   if (player1 && player2) {
     // Ball collision with player 1 paddle (left side)
+    // Paddle 1 is at x=0 to x=PADDLE_WIDTH
     if (
+      gameState.ballVelocityX < 0 &&
       gameState.ballX <= PADDLE_WIDTH &&
-      gameState.ballY >= player1.paddleY &&
+      gameState.ballX + BALL_SIZE >= 0 &&
+      gameState.ballY + BALL_SIZE >= player1.paddleY &&
       gameState.ballY <= player1.paddleY + PADDLE_HEIGHT
     ) {
-      gameState.ballVelocityX = Math.abs(gameState.ballVelocityX);
-      const hitPos = (gameState.ballY - player1.paddleY) / PADDLE_HEIGHT;
-      gameState.ballVelocityY = (hitPos - 0.5) * BALL_SPEED * 2;
+      gameState.ballX = PADDLE_WIDTH; // Position correction - push ball out
+      gameState.ballVelocityX = Math.abs(gameState.ballVelocityX); // Reverse direction
+      const ballCenterY = gameState.ballY + BALL_SIZE / 2;
+      const hitPos = (ballCenterY - player1.paddleY) / PADDLE_HEIGHT;
+      gameState.ballVelocityY = (hitPos - 0.5) * BALL_SPEED * 2; // Add spin based on hit position
     }
 
     // Ball collision with player 2 paddle (right side)
+    // Paddle 2 is at x=CANVAS_WIDTH-PADDLE_WIDTH to x=CANVAS_WIDTH
     if (
-      gameState.ballX >= CANVAS_WIDTH - PADDLE_WIDTH - BALL_SIZE &&
-      gameState.ballY >= player2.paddleY &&
+      gameState.ballVelocityX > 0 &&
+      gameState.ballX + BALL_SIZE >= CANVAS_WIDTH - PADDLE_WIDTH &&
+      gameState.ballX <= CANVAS_WIDTH &&
+      gameState.ballY + BALL_SIZE >= player2.paddleY &&
       gameState.ballY <= player2.paddleY + PADDLE_HEIGHT
     ) {
-      gameState.ballVelocityX = -Math.abs(gameState.ballVelocityX);
-      const hitPos = (gameState.ballY - player2.paddleY) / PADDLE_HEIGHT;
-      gameState.ballVelocityY = (hitPos - 0.5) * BALL_SPEED * 2;
+      gameState.ballX = CANVAS_WIDTH - PADDLE_WIDTH - BALL_SIZE; // Position correction
+      gameState.ballVelocityX = -Math.abs(gameState.ballVelocityX); // Reverse direction
+      const ballCenterY = gameState.ballY + BALL_SIZE / 2;
+      const hitPos = (ballCenterY - player2.paddleY) / PADDLE_HEIGHT;
+      gameState.ballVelocityY = (hitPos - 0.5) * BALL_SPEED * 2; // Add spin based on hit position
     }
 
     // Ball goes off left side (player 2 scores)
@@ -126,7 +136,7 @@ export const broadcastGameState = (room: GameRoom) => {
     try {
       // For player 2 (playerIndex 1), just reverse the ball's X position
       const ballX = player.playerIndex === 1
-        ? CANVAS_WIDTH - room.gameState.ballX
+        ? CANVAS_WIDTH - room.gameState.ballX - BALL_SIZE
         : room.gameState.ballX;
 
       const gameData = {
@@ -175,26 +185,44 @@ export const updateGameState_2vs2 = (room: GameRoom) => {
   const player2_1 = players.find(p => p.playerIndex === 3);
 
   if (player1 && player2 && player1_1 && player2_1) {
-    // Ball collision with player 1 paddle (left side)
+    // Ball collision with player 1 team paddles (left side)
     if (
+      gameState.ballVelocityX < 0 &&
       gameState.ballX <= PADDLE_WIDTH &&
-      gameState.ballY >= player1.paddleY &&
-      gameState.ballY <= player1.paddleY + PADDLE_HEIGHT
+      gameState.ballX + BALL_SIZE >= 0
     ) {
-      gameState.ballVelocityX = Math.abs(gameState.ballVelocityX);
-      const hitPos = (gameState.ballY - player1.paddleY) / PADDLE_HEIGHT;
-      gameState.ballVelocityY = (hitPos - 0.5) * BALL_SPEED * 2;
+      const hittingPlayer = [player1, player1_1].find(p => 
+        gameState.ballY + BALL_SIZE >= p.paddleY && 
+        gameState.ballY <= p.paddleY + PADDLE_HEIGHT
+      );
+
+      if (hittingPlayer) {
+        gameState.ballX = PADDLE_WIDTH; // Position correction
+        gameState.ballVelocityX = Math.abs(gameState.ballVelocityX);
+        const ballCenterY = gameState.ballY + BALL_SIZE / 2;
+        const hitPos = (ballCenterY - hittingPlayer.paddleY) / PADDLE_HEIGHT;
+        gameState.ballVelocityY = (hitPos - 0.5) * BALL_SPEED * 2;
+      }
     }
 
-    // Ball collision with player 2 paddle (right side)
+    // Ball collision with player 2 team paddles (right side)
     if (
-      gameState.ballX >= CANVAS_WIDTH - PADDLE_WIDTH - BALL_SIZE &&
-      gameState.ballY >= player2.paddleY &&
-      gameState.ballY <= player2.paddleY + PADDLE_HEIGHT
+      gameState.ballVelocityX > 0 &&
+      gameState.ballX + BALL_SIZE >= CANVAS_WIDTH - PADDLE_WIDTH &&
+      gameState.ballX <= CANVAS_WIDTH
     ) {
-      gameState.ballVelocityX = -Math.abs(gameState.ballVelocityX);
-      const hitPos = (gameState.ballY - player2.paddleY) / PADDLE_HEIGHT;
-      gameState.ballVelocityY = (hitPos - 0.5) * BALL_SPEED * 2;
+      const hittingPlayer = [player2, player2_1].find(p => 
+        gameState.ballY + BALL_SIZE >= p.paddleY && 
+        gameState.ballY <= p.paddleY + PADDLE_HEIGHT
+      );
+
+      if (hittingPlayer) {
+        gameState.ballX = CANVAS_WIDTH - PADDLE_WIDTH - BALL_SIZE; // Position correction
+        gameState.ballVelocityX = -Math.abs(gameState.ballVelocityX);
+        const ballCenterY = gameState.ballY + BALL_SIZE / 2;
+        const hitPos = (ballCenterY - hittingPlayer.paddleY) / PADDLE_HEIGHT;
+        gameState.ballVelocityY = (hitPos - 0.5) * BALL_SPEED * 2;
+      }
     }
 
     // Ball goes off left side (player 2 scores)
@@ -255,7 +283,7 @@ export const broadcastGameState_2vs = (room: GameRoom) => {
     try {
       // For player 2 (playerIndex 2 and 3), just reverse the ball's X position
       const ballX = player.playerIndex === 3 || player.playerIndex === 2
-        ? CANVAS_WIDTH - room.gameState.ballX
+        ? CANVAS_WIDTH - room.gameState.ballX - BALL_SIZE
         : room.gameState.ballX;
 
       const gameData = {
