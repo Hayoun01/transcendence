@@ -363,6 +363,21 @@ services:
       - transcendence-network
     restart: unless-stopped
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run --token-file=/run/secrets/tunnel_token
+    volumes:
+      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+    secrets:
+      - tunnel_token
+    depends_on:
+      - frontend
+      - api_gateway
+    networks:
+      - transcendence-network
+    restart: unless-stopped
+
   prometheus:
     depends_on:
       - cadvisor
@@ -460,8 +475,6 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
     container_name: elasticsearch
-    profiles:
-      - elk
     environment:
       - discovery.type=single-node
       - xpack.security.http.ssl.enabled=false
@@ -482,8 +495,6 @@ services:
   logstash:
     image: docker.elastic.co/logstash/logstash:8.17.0
     container_name: logstash
-    profiles:
-      - elk
     environment:
       - "LS_JAVA_OPTS=-Xms512m -Xmx512m"
       - ELASTIC_PASSWORD=123456
@@ -499,8 +510,6 @@ services:
   setupelastic:
     container_name: setupelastic
     image: curlimages/curl:latest
-    profiles:
-      - elk
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -512,8 +521,6 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:8.17.0
     container_name: kibana
-    profiles:
-      - elk
     volumes:
       - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
     environment:
@@ -530,8 +537,6 @@ services:
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.17.0
     container_name: filebeat
-    profiles:
-      - elk
     user: root
     volumes:
       - logs-volume:/var/log/fastify:ro
@@ -613,4 +618,5 @@ secrets:
     file: ./secrets/redis_creds
   services_urls:
     file: ./secrets/services_urls
- 
+  tunnel_token:
+    file: ./secrets/tunnel_token
