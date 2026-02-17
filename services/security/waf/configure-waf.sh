@@ -41,12 +41,6 @@ SecRule REQUEST_METHOD "^(?:GET|HEAD|POST|OPTIONS|PUT|PATCH|DELETE)$" \
     nolog,\
     ctl:ruleRemoveById=911100"
 
-# ============================================================
-# Disable WAF for internal admin tools (Grafana, Prometheus, Kibana)
-# These services are already behind authentication (basic auth / login)
-# and their API calls (PromQL, Kibana internal) trigger false positives.
-# WAF remains ACTIVE for public-facing services (frontend + API gateway).
-# ============================================================
 SecRule REQUEST_HEADERS:Host "@rx ^localhost:(6969|9090|5601)$" \
     "id:900300,\
     phase:1,\
