@@ -452,9 +452,12 @@ const updateBallPhysics = (room: GameRoom) => {
   }
 
   // Wall bounces
-  if (ball.z <= BALL_PHYSICS.tableMinZ || ball.z >= BALL_PHYSICS.tableMaxZ) {
-    ball.velocityZ *= -1;
-    ball.z = ball.z <= BALL_PHYSICS.tableMinZ ? BALL_PHYSICS.tableMinZ : BALL_PHYSICS.tableMaxZ;
+  if (ball.z <= BALL_PHYSICS.tableMinZ) {
+    ball.z = BALL_PHYSICS.tableMinZ;
+    ball.velocityZ = Math.abs(ball.velocityZ);
+  } else if (ball.z >= BALL_PHYSICS.tableMaxZ) {
+    ball.z = BALL_PHYSICS.tableMaxZ;
+    ball.velocityZ = -Math.abs(ball.velocityZ);
   }
 
   // Check paddle collisions
@@ -538,6 +541,9 @@ const checkServerPaddleCollisions = (room: GameRoom) => {
     
     const hitOffset = (ball.z - player1.paddleY_3d) / 8;
     ball.velocityX = -Math.abs(ball.velocityX) * 1.05;
+    // Cap velocity to prevent tunneling
+    if (Math.abs(ball.velocityX) > 10) ball.velocityX = -10;
+    ball.x = 55; // Position correction
     ball.velocityY = Math.random() * (0.7 - 0.25) + 0.25;
     ball.velocityZ = hitOffset * 1.0;
     
@@ -552,6 +558,9 @@ const checkServerPaddleCollisions = (room: GameRoom) => {
     
     const hitOffset = (ball.z - player2.paddleY_3d) / 8;
     ball.velocityX = Math.abs(ball.velocityX) * 1.05;
+    // Cap velocity to prevent tunneling
+    if (Math.abs(ball.velocityX) > 10) ball.velocityX = 10;
+    ball.x = -55; // Position correction
     ball.velocityY = Math.random() * (0.7 - 0.25) + 0.25;
     ball.velocityZ = hitOffset * 1.0;
     

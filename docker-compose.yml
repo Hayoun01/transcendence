@@ -479,7 +479,7 @@ services:
       - discovery.type=single-node
       - xpack.security.http.ssl.enabled=false
       - xpack.security.enabled=true
-      - ELASTIC_PASSWORD=123456
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     healthcheck:
       test: curl -s http://localhost:9200 >/dev/null || exit 1
       interval: 5s
@@ -497,7 +497,7 @@ services:
     container_name: logstash
     environment:
       - "LS_JAVA_OPTS=-Xms512m -Xmx512m"
-      - ELASTIC_PASSWORD=123456
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     volumes:
       - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
       - ./elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
@@ -514,7 +514,7 @@ services:
       elasticsearch:
         condition: service_healthy
     restart: "no"
-    entrypoint: 'curl -X POST http://elasticsearch:9200/_security/user/kibana_system/_password -H "Content-Type: application/json" -d "{\"password\": \"123456\"}" -u elastic:123456'
+    entrypoint: 'curl -X POST http://elasticsearch:9200/_security/user/${KIBANA_USERNAME}/_password -H "Content-Type: application/json" -d "{\"password\": \"${KIBANA_PASSWORD}\"}" -u ${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}'
     networks:
       - elk-network
   
@@ -524,10 +524,10 @@ services:
     volumes:
       - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
     environment:
-      - KIBANA_USERNAME=kibana_system
-      - KIBANA_PASSWORD=123456
-      - KIBANA_ENCRYPTION_KEY=uhduiha89hd8uhduiha89hd8uhduiha8
-      - KIBANA_OBJ_ENCRYPTION_KEY=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
+      - KIBANA_USERNAME=${KIBANA_USERNAME}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+      - KIBANA_ENCRYPTION_KEY=${KIBANA_ENCRYPTION_KEY}
+      - KIBANA_OBJ_ENCRYPTION_KEY=${KIBANA_OBJ_ENCRYPTION_KEY}
     networks:
       - elk-network
     depends_on:
