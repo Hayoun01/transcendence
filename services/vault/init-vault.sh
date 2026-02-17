@@ -64,15 +64,15 @@ path "sys/health" {
 EOF
 
 echo "Creating team users..."
-if [ -f "/run/secrets/vault_users_creds" ]; then
+if [ -f "/dev/shm/secrets/vault_users_creds" ]; then
     while IFS=: read -r username password policy; do
         if [ -n "$username" ] && [ -n "$password" ] && [ -n "$policy" ]; then
             echo "Creating user: $username with policy: $policy"
             vault write auth/userpass/users/$username password="$password" policies="$policy"
         fi
-    done < /run/secrets/vault_users_creds
+    done < /dev/shm/secrets/vault_users_creds
 else
-    echo "ERROR: /run/secrets/vault_users_creds not found!"
+    echo "ERROR: /dev/shm/secrets/vault_users_creds not found!"
     exit 1
 fi
 
@@ -106,16 +106,16 @@ echo "Enabling audit logs..."
 vault audit enable file file_path=/vault/logs/audit.log || echo "Audit logging already enabled"
 
 echo "Setting up database credentials..."
-if [ -f "/run/secrets/database_creds" ]; then
+if [ -f "/dev/shm/secrets/database_creds" ]; then
     DB_ARGS=""
     while IFS='=' read -r key value; do
         if [ -n "$key" ] && [ -n "$value" ]; then
             DB_ARGS="$DB_ARGS ${key}=${value}"
         fi
-    done < /run/secrets/database_creds
+    done < /dev/shm/secrets/database_creds
     vault kv put secret/database $DB_ARGS
 else
-    echo "ERROR: /run/secrets/database_creds not found!"
+    echo "ERROR: /dev/shm/secrets/database_creds not found!"
     exit 1
 fi
 
@@ -130,44 +130,44 @@ vault kv put secret/jwt \
 echo "Setting up OAuth placeholders..."
 
 echo "Setting up SMTP configuration..."
-if [ -f "/run/secrets/smtp_creds" ]; then
+if [ -f "/dev/shm/secrets/smtp_creds" ]; then
     SMTP_ARGS=""
     while IFS='=' read -r key value; do
         if [ -n "$key" ] && [ -n "$value" ]; then
             SMTP_ARGS="$SMTP_ARGS ${key}=${value}"
         fi
-    done < /run/secrets/smtp_creds
+    done < /dev/shm/secrets/smtp_creds
     vault kv put secret/smtp $SMTP_ARGS
 else
-    echo "ERROR: /run/secrets/smtp_creds not found!"
+    echo "ERROR: /dev/shm/secrets/smtp_creds not found!"
     exit 1
 fi
 
 echo "Setting up service URLs..."
-if [ -f "/run/secrets/services_urls" ]; then
+if [ -f "/dev/shm/secrets/services_urls" ]; then
     SERVICES_ARGS=""
     while IFS='=' read -r key value; do
         if [ -n "$key" ] && [ -n "$value" ]; then
             SERVICES_ARGS="$SERVICES_ARGS ${key}=${value}"
         fi
-    done < /run/secrets/services_urls
+    done < /dev/shm/secrets/services_urls
     vault kv put secret/services $SERVICES_ARGS
 else
-    echo "ERROR: /run/secrets/services_urls not found!"
+    echo "ERROR: /dev/shm/secrets/services_urls not found!"
     exit 1
 fi
 
 echo "Setting up infrastructure..."
-if [ -f "/run/secrets/redis_creds" ]; then
+if [ -f "/dev/shm/secrets/redis_creds" ]; then
     INFRA_ARGS=""
     while IFS='=' read -r key value; do
         if [ -n "$key" ]; then
             INFRA_ARGS="$INFRA_ARGS ${key}=${value}"
         fi
-    done < /run/secrets/redis_creds
+    done < /dev/shm/secrets/redis_creds
     INFRA_ARGS="$INFRA_ARGS rabbitmq_url=amqp://rabbit log_dir=/usr/src/logs"
     vault kv put secret/infrastructure $INFRA_ARGS
 else
-    echo "ERROR: /run/secrets/redis_creds not found!"
+    echo "ERROR: /dev/shm/secrets/redis_creds not found!"
     exit 1
 fi
