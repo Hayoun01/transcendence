@@ -31,9 +31,22 @@ export const updateGameState = (room: GameRoom ,fastify :FastifyInstance) => {
   gameState.ballX += gameState.ballVelocityX;
   gameState.ballY += gameState.ballVelocityY;
 
-  // Ball collision with top and bottom walls
-  if (gameState.ballY <= 0 || gameState.ballY >= CANVAS_HEIGHT - BALL_SIZE) {
-    gameState.ballVelocityY = -gameState.ballVelocityY;
+  // Ball collision with top and bottom walls - improved with position correction
+  if (gameState.ballY <= 0) {
+    gameState.ballY = 0; // Position correction
+    gameState.ballVelocityY = Math.abs(gameState.ballVelocityY); // Ensure positive velocity
+    // Ensure minimum bounce velocity
+    if (Math.abs(gameState.ballVelocityY) < 2) {
+      gameState.ballVelocityY = 2;
+    }
+  }
+  if (gameState.ballY >= CANVAS_HEIGHT - BALL_SIZE) {
+    gameState.ballY = CANVAS_HEIGHT - BALL_SIZE; // Position correction
+    gameState.ballVelocityY = -Math.abs(gameState.ballVelocityY); // Ensure negative velocity
+    // Ensure minimum bounce velocity
+    if (Math.abs(gameState.ballVelocityY) < 2) {
+      gameState.ballVelocityY = -2;
+    }
   }
 
   const players = Array.from(gameState.players.values());
