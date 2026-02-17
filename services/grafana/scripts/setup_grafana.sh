@@ -20,9 +20,7 @@ until curl -k -s -f -o /dev/null "$GRAFANA_URL/api/health"; do
 done
 echo -e "Grafana is ready\n"
 
-#sleep 5
 grafana cli --homepath=/usr/share/grafana admin reset-admin-password $ADMIN_PASSWORD
-sleep 5
 for file in "$DATASOURCES_DIR"/*.json; do
   if [[ -f "$file" ]]; then
     filename=$(basename -- "$file")
