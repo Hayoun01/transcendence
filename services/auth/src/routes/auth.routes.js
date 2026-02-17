@@ -3,7 +3,7 @@ import { authControllers } from "../controllers/auth.controllers.js";
 import { prisma } from "../db/prisma.js";
 import otpServices from "../services/otp.services.js";
 import { getQueue, QueueType } from "../services/queue.services.js";
-import { hashPassword } from "../utils/bcrypt.js";
+import { hashCompare, hashPassword } from "../utils/bcrypt.js";
 import { environ } from "../utils/environ.js";
 import { sendError, sendSuccess } from "../utils/fastify.js";
 
@@ -104,7 +104,7 @@ export default (fastify, opts, done) => {
           },
         });
       }
-      return sendSuccess(reply, 200, "EMAIL_VERIFICATION_SENT_IF_ASSOCIATED");
+      return sendSuccess(reply, 200, "Verification email sent");
     },
   );
 
@@ -118,7 +118,9 @@ export default (fastify, opts, done) => {
         path: err.path?.join(".") || err.keys?.join("."),
         message: err.message,
       }));
-      return sendError(reply, 400, "Bad request", { errors: errors });
+      return sendError(reply, 400, errors[0]?.message || "Validation failed", {
+        errors: errors,
+      });
     }
     const { token } = request.body;
     const { valid, reason, userId } = await otpServices.verifyOTPByToken(
@@ -143,7 +145,9 @@ export default (fastify, opts, done) => {
         path: err.path?.join(".") || err.keys?.join("."),
         message: err.message,
       }));
-      return sendError(reply, 400, "Bad request", { errors: errors });
+      return sendError(reply, 400, errors[0]?.message || "Validation failed", {
+        errors: errors,
+      });
     }
     const { token } = request.query;
     const { valid, reason, userId } = await otpServices.verifyOTPByToken(
@@ -183,7 +187,7 @@ export default (fastify, opts, done) => {
 
   // reset password using the OTP (one-time code). body: { token, password }
   const resetPasswordSchema = z.object({
-    token: z.string().min(1, "token is required"),
+    token: z.string().min(1, "Token is required"),
     password: z.string().min(8, "Password must be at least 8 characters"),
   });
 
@@ -209,7 +213,7 @@ export default (fastify, opts, done) => {
       });
     }
 
-    return sendSuccess(reply, 200, "PASSWORD_RESET_SENT_IF_ASSOCIATED");
+    return sendSuccess(reply, 200, "Verification email sent");
   });
 
   fastify.post("/reset-password", async (request, reply) => {
@@ -219,7 +223,9 @@ export default (fastify, opts, done) => {
         path: err.path?.join(".") || err.keys?.join("."),
         message: err.message,
       }));
-      return sendError(reply, 400, "Bad request", { errors: errors });
+      return sendError(reply, 400, errors[0]?.message || "Validation failed", {
+        errors: errors,
+      });
     }
     const { token, password } = request.body;
     const { valid, reason, userId } = await otpServices.verifyOTPByToken(
@@ -247,6 +253,86 @@ export default (fastify, opts, done) => {
     }
 
     return sendSuccess(reply, 200, "PASSWORD_RESET_SUCCESS");
+  });
+
+  const changePasswordSchema = z.object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(64, "Password must not exceed 64 characters")
+      .regex(/[A-Z]/, "Must contain at least one uppercase letter")
+      .regex(/[a-z]/, "Must contain at least one lowercase letter")
+      .regex(/\d/, "Must contain at least one number")
+      .regex(
+        /[!@#$%^&*(),.?":{}|<>]/,
+        "Must contain at least one special character",
+      )
+      .regex(/^\S*$/, "Must not contain spaces"),
+  });
+
+  fastify.post("/change-password", async (request, reply) => {
+    const userId = request.headers["x-user-id"];
+    if (!userId) {
+      return sendError(reply, 401, "Unauthorized");
+    }
+
+    const result = changePasswordSchema.safeParse(request.body);
+    if (!result.success) {
+      const errors = result.error.errors.flatMap((err) => ({
+        path: err.path?.join(".") || err.keys?.join("."),
+        message: err.message,
+      }));
+      return sendError(reply, 400, errors[0]?.message || "Validation failed", {
+        errors: errors,
+      });
+    }
+
+    const { currentPassword, newPassword } = request.body;
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+        deletedAt: null,
+      },
+    });
+
+    if (!user) {
+      return sendError(reply, 404, "User not found");
+    }
+
+    const isValidPassword = hashCompare(currentPassword, user.passwordHashed);
+    if (!isValidPassword) {
+      return sendError(reply, 401, "Current password is incorrect");
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHashed: hashPassword(newPassword) },
+    });
+
+    let currentSessionId = null;
+    try {
+      const payload = await request.jwtVerify();
+      currentSessionId = payload.jti;
+    } catch (e) {}
+
+    await prisma.session.updateMany({
+      where: {
+        userId: user.id,
+        ...(currentSessionId && { id: { not: currentSessionId } }),
+        deletedAt: null,
+      },
+      data: { deletedAt: new Date() },
+    });
+
+    await getQueue(QueueType.EMAIL).add("password-change-confirmation", {
+      email: user.email,
+      template: "passwordResetConfirmation",
+      context: {},
+    });
+
+    return sendSuccess(reply, 200, "PASSWORD_CHANGED_SUCCESS");
   });
 
   done();

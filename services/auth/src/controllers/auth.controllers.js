@@ -21,7 +21,7 @@ const registerUser = (fastify) => async (request, reply) => {
       path: err.path?.join(".") || err.keys?.join("."),
       message: err.message,
     }));
-    return sendError(reply, 400, "Bad request", { errors: errors });
+    return sendError(reply, 400, errors[0]?.message || "Validation failed", { errors: errors });
   }
   let { email, password, username } = request.body;
   email = email?.trim();
@@ -84,7 +84,7 @@ const loginUser = (fastify) => async (request, reply) => {
       path: err.path?.join(".") || err.keys?.join("."),
       message: err.message,
     }));
-    return sendError(reply, 400, "Bad request", { errors: errors });
+    return sendError(reply, 400, errors[0]?.message || "Validation failed", { errors: errors });
   }
   let { email, password } = request.body;
   email = email?.trim();

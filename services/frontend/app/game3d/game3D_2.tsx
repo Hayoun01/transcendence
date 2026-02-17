@@ -127,7 +127,7 @@ export default function Game3D() {
         });
 
         // Movement parameters
-        const paddleSpeed = 4;
+        const paddleSpeed = 2;
         
         // Paddle movement bounds
         const paddle1MinZ = -50;
@@ -163,7 +163,19 @@ export default function Game3D() {
             });
 
         // Ball
-        // (skipped as previously edited)
+        BABYLON.SceneLoader.ImportMesh("", "./models/", "beach_ball.glb", scene, (meshes) => {
+            if (meshes.length > 0) {
+                ball = meshes[0];
+                ball.position = new BABYLON.Vector3(0, tableY + 5, -28.5); // MEDIUM height start
+                ball.scaling = new BABYLON.Vector3(1, 1, 1);
+            }
+        }, (progress) => {
+            console.log("Ball Loading progress:", progress);
+        }, (error) => {
+            console.log("Error loading ball model:", error);
+            ball = BABYLON.MeshBuilder.CreateSphere("fallbackBall", { diameter: 2 }, scene);
+            ball.position = new BABYLON.Vector3(0, tableY + 5, -28.5); // MEDIUM height start
+        });
 
         // Table
         BABYLON.SceneLoader.ImportMesh("", "./models/", "Untitled_.glb", scene, (meshes) => {
@@ -187,8 +199,6 @@ export default function Game3D() {
                 paddle1.position = new BABYLON.Vector3(60, 50, -28.5);
                 paddle1.rotation = new BABYLON.Vector3(0, Math.PI / 2, 0);
                 paddle1.scaling = new BABYLON.Vector3(0.8, 0.8, 0.8);
-                // Fix paddle in front
-                meshes.forEach(m => m.renderingGroupId = 1);
             }
         }, (progress) => {
             console.log("Paddle 1 Loading progress:", progress);
@@ -196,7 +206,6 @@ export default function Game3D() {
             console.log("Error loading paddle 1 model:", error);
             paddle1 = BABYLON.MeshBuilder.CreateBox("fallbackPaddle1", { width: 8, height: 12, depth: 1 }, scene);
             paddle1.position = new BABYLON.Vector3(60, 50, -28.5);
-            paddle1.renderingGroupId = 1;
         });
 
         // Paddle Player 2 (Left side)
@@ -206,8 +215,6 @@ export default function Game3D() {
                 paddle2.position = new BABYLON.Vector3(-60, 50, -28.5);
                 paddle2.rotation = new BABYLON.Vector3(0, -Math.PI/2, 0);
                 paddle2.scaling = new BABYLON.Vector3(0.8, 0.8, 0.8);
-                // Fix paddle in front
-                meshes.forEach(m => m.renderingGroupId = 1);
             }
         }, (progress) => {
             console.log("Paddle 2 Loading progress:", progress);
@@ -215,7 +222,6 @@ export default function Game3D() {
             console.log("Error loading paddle 2 model:", error);
             paddle2 = BABYLON.MeshBuilder.CreateBox("fallbackPaddle2", { width: 8, height: 12, depth: 1 }, scene);
             paddle2.position = new BABYLON.Vector3(-60, 50, -28.5);
-            paddle2.renderingGroupId = 1;
         });
 
 
@@ -527,6 +533,7 @@ export default function Game3D() {
                 if (myPlayer)
                 {
                   setP_me_PaddleY(myPlayer.paddleY);
+                  P_2_paddleY_REF.current = myPlayer.paddleY;
                   setMyScore(myPlayer.score);
                 } 
                 if (opponent) 
