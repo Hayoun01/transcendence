@@ -197,8 +197,6 @@ services:
     container_name: ft_transcendence_vault
     environment:
       VAULT_DEV_LISTEN_ADDRESS: ${VAULT_DEV_LISTEN_ADDRESS:-0.0.0.0:8200}
-    ports:
-      - "8200:8200"
     cap_add:
       - IPC_LOCK
     volumes:
@@ -462,6 +460,7 @@ services:
       - "5601:5601"
       - "9090:9090"
       - "6969:6969"
+      - "8200:8200"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
