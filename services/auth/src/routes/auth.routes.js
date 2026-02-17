@@ -84,7 +84,8 @@ export default (fastify, opts, done) => {
       ],
     },
     async (request, reply) => {
-      const { email } = request.body;
+      let { email } = request.body;
+      email = email?.trim();
       const user = await prisma.user.findUnique({
         where: {
           email,
@@ -93,20 +94,12 @@ export default (fastify, opts, done) => {
         },
       });
       if (user) {
-        const sessionToken = fastify.jwt.sign(
-          {
-            userId: user.id,
-            type: "email_verification",
-          },
-          { expiresIn: "15m" },
-        );
         await prisma.outBox.create({
           data: {
-            eventType: "UserRegistered",
+            eventType: "ResendVerification",
             userId: user.id,
             payload: {
               email,
-              sessionToken,
             },
           },
         });
@@ -116,10 +109,8 @@ export default (fastify, opts, done) => {
   );
 
   const otpVerifySchema = z.object({
-    otp: z.string().min(1, "OTP is required"),
-    sessionToken: z.string().min(1, "sessionToken is required"),
+    token: z.string().min(1, "token is required"),
   });
-  // ? maybe i'll consider validation using tokens instead of OTPs
   fastify.post("/otp/verify", async (request, reply) => {
     const result = otpVerifySchema.safeParse(request.body);
     if (!result.success) {
@@ -129,30 +120,20 @@ export default (fastify, opts, done) => {
       }));
       return sendError(reply, 400, "Bad request", { errors: errors });
     }
-    const { sessionToken, otp } = request.body;
-    let payload;
-    try {
-      payload = fastify.jwt.verify(sessionToken);
-    } catch (err) {
-      fastify.log.warn(
-        { sessionToken },
-        `A suspicious attempt to validate otp using invalid sessionToken`,
-      );
-      return sendError(reply, 401, "Invalid or expired session token");
-    }
-    const { userId, type } = payload;
-    const { valid, reason } = await otpServices.verifyOTP(userId, type, otp);
+    const { token } = request.body;
+    const { valid, reason, userId } = await otpServices.verifyOTPByToken(
+      "email_verification",
+      token,
+    );
     if (!valid) return sendError(reply, 400, reason);
-    if (type === "email_verification") {
-      await prisma.user.update({
-        where: {
-          id: userId,
-        },
-        data: {
-          isVerified: true,
-        },
-      });
-    }
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        isVerified: true,
+      },
+    });
     return sendSuccess(reply, 200, "OTP verified successfully");
   });
   fastify.get("/otp/verify", async (request, reply) => {
@@ -164,59 +145,51 @@ export default (fastify, opts, done) => {
       }));
       return sendError(reply, 400, "Bad request", { errors: errors });
     }
-    const { sessionToken, otp } = request.query;
-    let payload;
-    try {
-      payload = fastify.jwt.verify(sessionToken);
-    } catch (err) {
-      fastify.log.warn(
-        { reqId: request.id, sessionToken },
-        `A suspicious attempt to validate otp using invalid sessionToken`,
-      );
-      return sendError(reply, 401, "Invalid or expired session token");
-    }
-    const { userId, type } = payload;
-    const { valid, reason } = await otpServices.verifyOTP(userId, type, otp);
+    const { token } = request.query;
+    const { valid, reason, userId } = await otpServices.verifyOTPByToken(
+      "email_verification",
+      token,
+    );
     if (!valid) return sendError(reply, 400, reason);
-    if (type === "email_verification") {
-      const user = await prisma.user.update({
-        where: {
-          id: userId,
-        },
-        data: {
-          isVerified: true,
-        },
-      });
-      console.log(payload);
-      await getQueue(QueueType.EMAIL).add("welcome-email", {
-        email: user.email,
-        template: "welcome",
-      });
-      await fastify.rabbit.channel.publish(
-        "user.events",
-        "user.created",
-        Buffer.from(
-          JSON.stringify({
-            userId,
-          }),
-        ),
-        {
-          persistent: true,
-        },
-      );
-    }
+    const user = await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        isVerified: true,
+      },
+    });
+    await getQueue(QueueType.EMAIL).add("welcome-email", {
+      email: user.email,
+      template: "welcome",
+      context: {
+        link: environ.CLIENT_URL,
+      },
+    });
+    await fastify.rabbit.channel.publish(
+      "user.events",
+      "user.created",
+      Buffer.from(
+        JSON.stringify({
+          userId,
+        }),
+      ),
+      {
+        persistent: true,
+      },
+    );
     return sendSuccess(reply, 200, "OTP verified successfully");
   });
 
-  // reset password using the OTP (one-time code). body: { userId, otp, password }
+  // reset password using the OTP (one-time code). body: { token, password }
   const resetPasswordSchema = z.object({
-    userId: z.string().min(1, "userId is required"),
     token: z.string().min(1, "token is required"),
     password: z.string().min(8, "Password must be at least 8 characters"),
   });
 
   fastify.post("/forget-password", async (request, reply) => {
-    const { email } = request.body;
+    let { email } = request.body;
+    email = email?.trim();
     const user = await prisma.user.findUnique({
       where: { email, deletedAt: null },
     });
@@ -231,7 +204,7 @@ export default (fastify, opts, done) => {
         email: user.email,
         template: "passwordReset",
         context: {
-          link: `${environ.CLIENT_URL}/reset-password?userId=${user.id}&otp=${otp.token}`,
+          link: `${environ.CLIENT_URL}/reset-password?token=${otp.token}`,
         },
       });
     }
@@ -248,9 +221,8 @@ export default (fastify, opts, done) => {
       }));
       return sendError(reply, 400, "Bad request", { errors: errors });
     }
-    const { userId, token, password } = request.body;
-    const { valid, reason } = await otpServices.verifyOTP(
-      userId,
+    const { token, password } = request.body;
+    const { valid, reason, userId } = await otpServices.verifyOTPByToken(
       "password_reset",
       token,
     );
@@ -265,11 +237,14 @@ export default (fastify, opts, done) => {
       data: { deletedAt: new Date() },
     });
 
-    await getQueue(QueueType.EMAIL).add("password-reset-confirmation", {
-      email: (await prisma.user.findUnique({ where: { id: userId } })).email,
-      template: "passwordResetConfirmation",
-      context: {},
-    });
+    const resetUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (resetUser) {
+      await getQueue(QueueType.EMAIL).add("password-reset-confirmation", {
+        email: resetUser.email,
+        template: "passwordResetConfirmation",
+        context: {},
+      });
+    }
 
     return sendSuccess(reply, 200, "PASSWORD_RESET_SUCCESS");
   });
