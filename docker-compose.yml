@@ -366,11 +366,11 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
-    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
-    environment:
-      - TUNNEL_TOKEN=XXXXX
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run --token-file=/run/secrets/tunnel_token
     volumes:
       - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+    secrets:
+      - tunnel_token
     depends_on:
       - frontend
       - api_gateway
@@ -618,3 +618,5 @@ secrets:
     file: ./secrets/redis_creds
   services_urls:
     file: ./secrets/services_urls
+  tunnel_token:
+    file: ./secrets/tunnel_token

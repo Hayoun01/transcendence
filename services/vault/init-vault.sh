@@ -121,9 +121,9 @@ fi
 
 echo "Setting up JWT secrets..."
 vault kv put secret/jwt \
-    secret="$(openssl rand -hex 32)" \
-    cookie_secret="$(openssl rand -hex 32)" \
-    two_fa_key="$(openssl rand -hex 32)" \
+    JWT_SECRET="$(openssl rand -hex 32)" \
+    COOKIE_SECRET="$(openssl rand -hex 32)" \
+    TWO_FA_KEY="$(openssl rand -hex 32)" \
     internal_secret="$(openssl rand -hex 32)" \
     internal_hmac_secret="$(openssl rand -hex 32)"
 
@@ -165,7 +165,7 @@ if [ -f "/dev/shm/secrets/redis_creds" ]; then
             INFRA_ARGS="$INFRA_ARGS ${key}=${value}"
         fi
     done < /dev/shm/secrets/redis_creds
-    INFRA_ARGS="$INFRA_ARGS rabbitmq_url=amqp://rabbit log_dir=/usr/src/logs"
+    INFRA_ARGS="$INFRA_ARGS RABBITMQ_URL=amqp://rabbit LOG_DIR=/usr/src/logs"
     vault kv put secret/infrastructure $INFRA_ARGS
 else
     echo "ERROR: /dev/shm/secrets/redis_creds not found!"
