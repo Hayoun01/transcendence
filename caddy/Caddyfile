@@ -20,3 +20,7 @@ localhost:9090 {
 localhost:5601 {
   reverse_proxy ft_transcendence_waf:8080
 }
+
+localhost:8200 {
+  reverse_proxy ft_transcendence_waf:8080
+}
