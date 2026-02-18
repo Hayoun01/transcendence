@@ -479,6 +479,7 @@ services:
       - xpack.security.http.ssl.enabled=false
       - xpack.security.enabled=true
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     healthcheck:
       test: curl -s http://localhost:9200 >/dev/null || exit 1
       interval: 5s
