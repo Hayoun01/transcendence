@@ -63,3 +63,5 @@ token.txt
 secrets/
 secrets/*
 
+services/security/approle/
+services/security/approle/*
